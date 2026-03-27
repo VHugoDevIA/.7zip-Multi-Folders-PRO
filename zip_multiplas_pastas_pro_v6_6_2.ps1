@@ -3,9 +3,9 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $SevenZip = "C:\Program Files\7-Zip\7z.exe"
-$AppTitle = "ZIP Multiplas Pasta - PRO v6.1.2"
-$MailSubject = "ZIP Multiplas Pasta - PRO v6.1.2"
-$StateFile = Join-Path -Path $env:APPDATA -ChildPath "VHugoDevIA\zip_multiplas_pastas_pro_v6_1_2_state.json"
+$AppTitle = "ZIP Multiplas Pasta - PRO v6.6.2"
+$MailSubject = "ZIP Multiplas Pasta - PRO v6.6.2"
+$StateFile = Join-Path -Path $env:APPDATA -ChildPath "VHugoDevIA\zip_multiplas_pastas_pro_v6_6_2_state.json"
 $script:CurrentLogFile = $null
 $script:ComputerSuffix = if ($env:COMPUTERNAME -and $env:COMPUTERNAME.Length -ge 4) { $env:COMPUTERNAME.Substring($env:COMPUTERNAME.Length - 4).ToUpper() } elseif ($env:COMPUTERNAME) { $env:COMPUTERNAME.ToUpper() } else { "PC" }
 
@@ -23,6 +23,7 @@ $script:ThemeColors = @{
         LabelForeColor = [System.Drawing.Color]::Black
         GroupBoxForeColor = [System.Drawing.Color]::Black
         ProgressBarBackColor = [System.Drawing.SystemColors]::Control
+        ProgressBarForeColor = [System.Drawing.Color]::Green
         ListBoxBackColor = [System.Drawing.Color]::White
         ListBoxForeColor = [System.Drawing.Color]::Black
     }
@@ -37,6 +38,7 @@ $script:ThemeColors = @{
         LabelForeColor = [System.Drawing.Color]::White
         GroupBoxForeColor = [System.Drawing.Color]::White
         ProgressBarBackColor = [System.Drawing.Color]::FromArgb(37, 37, 38)
+        ProgressBarForeColor = [System.Drawing.Color]::LimeGreen
         ListBoxBackColor = [System.Drawing.Color]::FromArgb(30, 30, 30)
         ListBoxForeColor = [System.Drawing.Color]::White
     }
@@ -82,6 +84,7 @@ function ApplyThemeToControl {
         }
         "ProgressBar" {
             $Control.BackColor = $Colors.ProgressBarBackColor
+            $Control.ForeColor = $Colors.ProgressBarForeColor
         }
         "Panel" {
             $Control.BackColor = $Colors.PanelBackColor
@@ -434,6 +437,13 @@ $form.FormBorderStyle = "Sizable"
 $form.MaximizeBox = $true
 $form.AllowDrop = $true
 
+# ToolTip
+$toolTip = New-Object System.Windows.Forms.ToolTip
+$toolTip.AutoPopDelay = 5000
+$toolTip.InitialDelay = 1000
+$toolTip.ReshowDelay = 500
+$toolTip.ShowAlways = $true
+
 # Menu Strip
 $menuStrip = New-Object System.Windows.Forms.MenuStrip
 $form.MainMenuStrip = $menuStrip
@@ -500,6 +510,15 @@ $lblBrand.Size = New-Object System.Drawing.Size(220, 20)
 $lblBrand.TextAlign = "MiddleRight"
 $form.Controls.Add($lblBrand)
 
+# Logo/Icon area
+$lblLogo = New-Object System.Windows.Forms.Label
+$lblLogo.Text = "📦 ZIP PRO"
+$lblLogo.Font = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
+$lblLogo.Location = New-Object System.Drawing.Point(20, 30)
+$lblLogo.Size = New-Object System.Drawing.Size(200, 30)
+$lblLogo.TextAlign = "MiddleLeft"
+$form.Controls.Add($lblLogo)
+
 $lblTop = New-Object System.Windows.Forms.Label
 $lblTop.Text = "Arraste várias pastas do Explorador para a lista abaixo, ou use 'Adicionar pasta'."
 $lblTop.Location = New-Object System.Drawing.Point(20, 60)
@@ -511,30 +530,35 @@ $btnAdd.Text = "Adicionar pasta"
 $btnAdd.Location = New-Object System.Drawing.Point(20, 90)
 $btnAdd.Size = New-Object System.Drawing.Size(140, 35)
 $form.Controls.Add($btnAdd)
+$toolTip.SetToolTip($btnAdd, "Adicionar uma pasta para compressão usando o explorador de arquivos")
 
 $btnRemove = New-Object System.Windows.Forms.Button
 $btnRemove.Text = "Remover selecionada"
 $btnRemove.Location = New-Object System.Drawing.Point(170, 90)
 $btnRemove.Size = New-Object System.Drawing.Size(160, 35)
 $form.Controls.Add($btnRemove)
+$toolTip.SetToolTip($btnRemove, "Remover a pasta selecionada da lista")
 
 $btnClear = New-Object System.Windows.Forms.Button
 $btnClear.Text = "Limpar lista"
 $btnClear.Location = New-Object System.Drawing.Point(340, 90)
 $btnClear.Size = New-Object System.Drawing.Size(120, 35)
 $form.Controls.Add($btnClear)
+$toolTip.SetToolTip($btnClear, "Remover todas as pastas da lista")
 
 $btnClearLog = New-Object System.Windows.Forms.Button
 $btnClearLog.Text = "Limpar log"
 $btnClearLog.Location = New-Object System.Drawing.Point(470, 90)
 $btnClearLog.Size = New-Object System.Drawing.Size(120, 35)
 $form.Controls.Add($btnClearLog)
+$toolTip.SetToolTip($btnClearLog, "Limpar o conteúdo da área de log")
 
 $btnOptions = New-Object System.Windows.Forms.Button
 $btnOptions.Text = "Opções..."
 $btnOptions.Location = New-Object System.Drawing.Point(600, 90)
 $btnOptions.Size = New-Object System.Drawing.Size(120, 35)
 $form.Controls.Add($btnOptions)
+$toolTip.SetToolTip($btnOptions, "Configurar opções adicionais do aplicativo")
 
 $btnCancelMain = New-Object System.Windows.Forms.Button
 $btnCancelMain.Text = "Cancelar"
@@ -542,6 +566,7 @@ $btnCancelMain.Location = New-Object System.Drawing.Point(820, 90)
 $btnCancelMain.Size = New-Object System.Drawing.Size(120, 35)
 $btnCancelMain.Enabled = $false
 $form.Controls.Add($btnCancelMain)
+$toolTip.SetToolTip($btnCancelMain, "Cancelar a operação de compressão em andamento")
 
 $btnRun = New-Object System.Windows.Forms.Button
 $btnRun.Text = "Iniciar"
@@ -549,6 +574,7 @@ $btnRun.Location = New-Object System.Drawing.Point(950, 90)
 $btnRun.Size = New-Object System.Drawing.Size(130, 35)
 $btnRun.Enabled = $false
 $form.Controls.Add($btnRun)
+$toolTip.SetToolTip($btnRun, "Iniciar a compressão das pastas selecionadas")
 
 $listBox = New-Object System.Windows.Forms.ListBox
 $listBox.Location = New-Object System.Drawing.Point(20, 140)
@@ -557,6 +583,7 @@ $listBox.SelectionMode = "MultiExtended"
 $listBox.HorizontalScrollbar = $true
 $listBox.AllowDrop = $true
 $form.Controls.Add($listBox)
+$toolTip.SetToolTip($listBox, "Lista de pastas a comprimir. Arraste pastas aqui ou use 'Adicionar pasta'")
 
 $grpMain = New-Object System.Windows.Forms.GroupBox
 $grpMain.Text = "Compressão"
@@ -787,6 +814,7 @@ $lblStatus = New-Object System.Windows.Forms.Label
 $lblStatus.Text = "Estado: parado"
 $lblStatus.Location = New-Object System.Drawing.Point(20, 665)
 $lblStatus.Size = New-Object System.Drawing.Size(1060, 20)
+$lblStatus.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
 $form.Controls.Add($lblStatus)
 
 $progressFolder = New-Object System.Windows.Forms.ProgressBar
@@ -816,6 +844,7 @@ $txtLog.Multiline = $true
 $txtLog.ScrollBars = "Vertical"
 $txtLog.ReadOnly = $true
 $form.Controls.Add($txtLog)
+$toolTip.SetToolTip($txtLog, "Área de log mostrando o progresso e mensagens da compressão")
 
 $selectedFolders = New-Object 'System.Collections.Generic.List[string]'
 
