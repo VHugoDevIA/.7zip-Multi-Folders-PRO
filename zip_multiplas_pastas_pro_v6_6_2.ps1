@@ -272,7 +272,12 @@ function Start-NewProcessingLog {
         $headerLine = "".PadLeft(57, "=")
 
         @(
-            "$mailTo"
+            "V.Hugo - Dev.IA"
+            "`tVHugoDevIA@gmail.com"
+            "`t$mailTo"
+            ""
+            "V.Hugo - Dev.IA"
+            "`t$AppTitle"
             ""
             "$headerLine LOG DE PROCESSAMENTO $headerLine"
             ""
