@@ -274,7 +274,6 @@ function Start-NewProcessingLog {
         @(
             "V.Hugo - Dev.IA"
             "`tVHugoDevIA@gmail.com"
-            "`t$mailTo"
             ""
             "V.Hugo - Dev.IA"
             "`t$AppTitle"
