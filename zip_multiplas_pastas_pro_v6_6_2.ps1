@@ -1,4 +1,4 @@
-Add-Type -AssemblyName System.Windows.Forms
+﻿Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
@@ -274,7 +274,6 @@ function Start-NewProcessingLog {
         @(
             "V.Hugo - Dev.IA"
             "`tVHugoDevIA@gmail.com"
-            "`t$mailTo"
             ""
             "V.Hugo - Dev.IA"
             "`t$AppTitle"
@@ -512,7 +511,7 @@ $form.Controls.Add($lblBrand)
 
 # Logo/Icon area
 $lblLogo = New-Object System.Windows.Forms.Label
-$lblLogo.Text = "📦 ZIP PRO"
+$lblLogo.Text = "ZIP PRO"
 $lblLogo.Font = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
 $lblLogo.Location = New-Object System.Drawing.Point(20, 30)
 $lblLogo.Size = New-Object System.Drawing.Size(200, 30)
