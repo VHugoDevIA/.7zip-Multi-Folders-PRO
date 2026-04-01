@@ -18,7 +18,7 @@ jobs:
       - name: Verificar sintaxe do script
         shell: pwsh
         run: |
-          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content .\zip_multiplas_pastas_pro_v6_6.ps1 -Raw), [ref]$null)
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content .\zip_multiplas_pastas_pro_v6_6_2.ps1 -Raw), [ref]$null)
           Write-Host "Sintaxe OK"
 
       - name: Teste simples
