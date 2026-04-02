@@ -8,6 +8,7 @@
 - Opção de eliminar ficheiros após compressão (desativada se "comprimir ficheiros partilhados").
 - Drag&drop para ficheiros e pastas diretamente na lista.
 - Correção de bugs de inicialização e estabilidade.
+- Código completamente reescrito para corrigir erros de sintaxe e estrutura.
 
 Aplicação **PowerShell** com interface gráfica Windows Forms para automatizar a compressão de múltiplas pastas e ficheiros usando o motor do 7-Zip (7z.exe).
 
