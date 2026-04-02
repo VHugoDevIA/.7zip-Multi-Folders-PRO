@@ -18,7 +18,11 @@ jobs:
       - name: Verificar sintaxe do script
         shell: pwsh
         run: |
+<<<<<<< HEAD:.github/workflows/main_6_7.yml
           $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content .\zip_multiplas_pastas_pro_v6_7.ps1 -Raw), [ref]$null)
+=======
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content .\zip_multiplas_pastas_pro_v6_1_2.ps1 -Raw), [ref]$null)
+>>>>>>> 47d25e71ee930172b25c074c495adefa7685a859:.github/workflows/main.yml
           Write-Host "Sintaxe OK"
 
       - name: Teste simples
