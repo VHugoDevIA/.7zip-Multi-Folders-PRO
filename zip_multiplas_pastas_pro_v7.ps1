@@ -737,27 +737,12 @@ $btnRun.Add_Click({
         Start-Process "explorer.exe" -ArgumentList "/select,""$($script:CurrentLogFile)"""
     }
 
-    Add-LogLine -TextBox $txtLog -Text "Processo terminado"
-})
-
 # --- Inicialização ---
 Load-State
 Refresh-UiState
 
 # --- Mostrar form ---
 [void]$form.ShowDialog()
-			$folderPath = $item -replace '^\[Pasta\] ', ''
-			$toRemove += $folderPath
-		}
-	}
-	foreach ($folderPath in $toRemove) {
-		[void]$selectedFolders.Remove($folderPath)
-		[void]$listBox.Items.Remove("[Pasta] $folderPath")
-		Add-LogLine -TextBox $txtLog -Text "Pasta removida: $folderPath"
-	}
-	Refresh-UiState
-})
-			$psi.FileName = $SevenZip
 			$psi.WorkingDirectory = $dir
 			$psi.Arguments = $argString
 			$psi.UseShellExecute = $false
