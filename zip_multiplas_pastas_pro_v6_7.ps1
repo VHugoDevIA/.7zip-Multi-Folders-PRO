@@ -368,8 +368,8 @@ $btnAdd.Text = "Adicionar pasta"
 $btnAdd.Location = New-Object System.Drawing.Point(20, 68)
 $btnAdd.Size = New-Object System.Drawing.Size(130, 32)
 $btnAdd.FlatStyle = "Flat"
-$btnAdd.BackColor = [System.Drawing.Color]::FromArgb(0, 122, 204)
-$btnAdd.ForeColor = [System.Drawing.Color]::White
+$btnAdd.BackColor = [System.Drawing.Color]::FromArgb(173, 216, 230) # Azul pastel
+$btnAdd.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
 $form.Controls.Add($btnAdd)
 
 $btnRemove = New-Object System.Windows.Forms.Button
@@ -377,8 +377,8 @@ $btnRemove.Text = "Remover selecionada"
 $btnRemove.Location = New-Object System.Drawing.Point(160, 68)
 $btnRemove.Size = New-Object System.Drawing.Size(150, 32)
 $btnRemove.FlatStyle = "Flat"
-$btnRemove.BackColor = [System.Drawing.Color]::FromArgb(204, 0, 0)
-$btnRemove.ForeColor = [System.Drawing.Color]::White
+$btnRemove.BackColor = [System.Drawing.Color]::FromArgb(255, 179, 186) # Vermelho pastel
+$btnRemove.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
 $form.Controls.Add($btnRemove)
 
 $btnClear = New-Object System.Windows.Forms.Button
@@ -386,8 +386,8 @@ $btnClear.Text = "Limpar lista"
 $btnClear.Location = New-Object System.Drawing.Point(320, 68)
 $btnClear.Size = New-Object System.Drawing.Size(110, 32)
 $btnClear.FlatStyle = "Flat"
-$btnClear.BackColor = [System.Drawing.Color]::FromArgb(255, 193, 7)
-$btnClear.ForeColor = [System.Drawing.Color]::Black
+$btnClear.BackColor = [System.Drawing.Color]::FromArgb(255, 236, 179) # Amarelo pastel
+$btnClear.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
 $form.Controls.Add($btnClear)
 
 $btnClearLog = New-Object System.Windows.Forms.Button
@@ -395,8 +395,8 @@ $btnClearLog.Text = "Limpar log"
 $btnClearLog.Location = New-Object System.Drawing.Point(440, 68)
 $btnClearLog.Size = New-Object System.Drawing.Size(110, 32)
 $btnClearLog.FlatStyle = "Flat"
-$btnClearLog.BackColor = [System.Drawing.Color]::FromArgb(255, 193, 7)
-$btnClearLog.ForeColor = [System.Drawing.Color]::Black
+$btnClearLog.BackColor = [System.Drawing.Color]::FromArgb(255, 236, 179) # Amarelo pastel
+$btnClearLog.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
 $form.Controls.Add($btnClearLog)
 
 $btnOptions = New-Object System.Windows.Forms.Button
@@ -404,8 +404,8 @@ $btnOptions.Text = "Opções..."
 $btnOptions.Location = New-Object System.Drawing.Point(560, 68)
 $btnOptions.Size = New-Object System.Drawing.Size(110, 32)
 $btnOptions.FlatStyle = "Flat"
-$btnOptions.BackColor = [System.Drawing.Color]::FromArgb(108, 117, 125)
-$btnOptions.ForeColor = [System.Drawing.Color]::White
+$btnOptions.BackColor = [System.Drawing.Color]::FromArgb(186, 225, 255) # Cinza-azulado pastel
+$btnOptions.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
 $form.Controls.Add($btnOptions)
 
 $btnCancelMain = New-Object System.Windows.Forms.Button
@@ -414,8 +414,8 @@ $btnCancelMain.Location = New-Object System.Drawing.Point(800, 68)
 $btnCancelMain.Size = New-Object System.Drawing.Size(110, 32)
 $btnCancelMain.Enabled = $false
 $btnCancelMain.FlatStyle = "Flat"
-$btnCancelMain.BackColor = [System.Drawing.Color]::FromArgb(220, 53, 69)
-$btnCancelMain.ForeColor = [System.Drawing.Color]::White
+$btnCancelMain.BackColor = [System.Drawing.Color]::FromArgb(255, 204, 204) # Rosa pastel
+$btnCancelMain.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
 $form.Controls.Add($btnCancelMain)
 
 $btnRun = New-Object System.Windows.Forms.Button
@@ -424,8 +424,8 @@ $btnRun.Location = New-Object System.Drawing.Point(920, 68)
 $btnRun.Size = New-Object System.Drawing.Size(120, 32)
 $btnRun.Enabled = $false
 $btnRun.FlatStyle = "Flat"
-$btnRun.BackColor = [System.Drawing.Color]::FromArgb(40, 167, 69)
-$btnRun.ForeColor = [System.Drawing.Color]::White
+$btnRun.BackColor = [System.Drawing.Color]::FromArgb(193, 255, 193) # Verde pastel
+$btnRun.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
 $form.Controls.Add($btnRun)
 
 
@@ -449,21 +449,23 @@ $panelBtns.Location = New-Object System.Drawing.Point(520, 0)
 $panelBtns.Size = New-Object System.Drawing.Size(500, 120)
 $panelSelect.Controls.Add($panelBtns)
 
-$btnAdd.Location = New-Object System.Drawing.Point(10, 10)
-$btnRemove.Location = New-Object System.Drawing.Point(10, 50)
-$btnClear.Location = New-Object System.Drawing.Point(10, 90)
-$btnClearLog.Location = New-Object System.Drawing.Point(130, 10)
-$btnOptions.Location = New-Object System.Drawing.Point(130, 50)
-$btnCancelMain.Location = New-Object System.Drawing.Point(250, 10)
-$btnRun.Location = New-Object System.Drawing.Point(250, 50)
 
-$panelBtns.Controls.Add($btnAdd)
-$panelBtns.Controls.Add($btnRemove)
-$panelBtns.Controls.Add($btnClear)
-$panelBtns.Controls.Add($btnClearLog)
-$panelBtns.Controls.Add($btnOptions)
-$panelBtns.Controls.Add($btnCancelMain)
-$panelBtns.Controls.Add($btnRun)
+# Organizar botões em coluna vertical, centralizados e espaçados
+$btnAdd.Location = New-Object System.Drawing.Point(30, 10)
+$btnRemove.Location = New-Object System.Drawing.Point(30, 50)
+$btnClear.Location = New-Object System.Drawing.Point(30, 90)
+$btnClearLog.Location = New-Object System.Drawing.Point(30, 130)
+$btnOptions.Location = New-Object System.Drawing.Point(30, 170)
+$btnCancelMain.Location = New-Object System.Drawing.Point(30, 210)
+$btnRun.Location = New-Object System.Drawing.Point(30, 250)
+
+$panelBtns.Size = New-Object System.Drawing.Size(180, 300)
+$panelSelect.Size = New-Object System.Drawing.Size(710, 300)
+$listBox.Size = New-Object System.Drawing.Size(500, 300)
+
+
+$panelBtns.Controls.Clear()
+$panelBtns.Controls.AddRange(@($btnAdd, $btnRemove, $btnClear, $btnClearLog, $btnOptions, $btnCancelMain, $btnRun))
 
 
 # Compressão mais larga
