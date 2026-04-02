@@ -1,6 +1,7 @@
 # ZIP Múltiplas Pastas - PRO v6.7
 
 **Alterações nesta versão (v6.7):**  
+- Interface gráfica modernizada: ListBox único para pastas/ficheiros, botões verticais, drag&drop, layout mais limpo.
 - Versão mais recente com todas as funcionalidades avançadas, incluindo otimizações de desempenho e novas opções de compressão.
 
 Aplicação **PowerShell** com interface gráfica Windows Forms para automatizar a compressão de múltiplas pastas usando o motor do 7-Zip (7z.exe).  

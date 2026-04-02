@@ -1,4 +1,124 @@
-﻿Add-Type -AssemblyName System.Windows.Forms
+﻿# --- Botões para ficheiros ---
+$btnAddFile = New-Object System.Windows.Forms.Button
+$btnAddFile.Text = "Adicionar ficheiro(s)"
+$btnAddFile.Size = New-Object System.Drawing.Size(130, 32)
+$btnAddFile.FlatStyle = "Flat"
+$btnAddFile.BackColor = [System.Drawing.Color]::FromArgb(186, 225, 255)
+$btnAddFile.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
+
+$btnRemoveFile = New-Object System.Windows.Forms.Button
+$btnRemoveFile.Text = "Remover ficheiro"
+$btnRemoveFile.Size = New-Object System.Drawing.Size(130, 32)
+$btnRemoveFile.FlatStyle = "Flat"
+$btnRemoveFile.BackColor = [System.Drawing.Color]::FromArgb(255, 179, 186)
+$btnRemoveFile.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
+
+# --- Listas separadas para pastas e ficheiros ---
+$selectedFolders = New-Object 'System.Collections.Generic.List[string]'
+$selectedFiles = New-Object 'System.Collections.Generic.List[string]'
+
+# --- ListBox único para ficheiros e pastas ---
+$listBox = New-Object System.Windows.Forms.ListBox
+$listBox.Location = New-Object System.Drawing.Point(0, 0)
+$listBox.Size = New-Object System.Drawing.Size(500, 300)
+$listBox.SelectionMode = "MultiExtended"
+$listBox.HorizontalScrollbar = $true
+$listBox.AllowDrop = $true
+$panelSelect.Controls.Add($listBox)
+
+# Alinhar todos os botões verticalmente
+$panelBtns.Controls.Clear()
+$btnAdd.Location = New-Object System.Drawing.Point(30, 10)
+$btnAddFile.Location = New-Object System.Drawing.Point(30, 50)
+$btnRemove.Location = New-Object System.Drawing.Point(30, 90)
+$btnRemoveFile.Location = New-Object System.Drawing.Point(30, 130)
+$btnClear.Location = New-Object System.Drawing.Point(30, 170)
+$btnClearLog.Location = New-Object System.Drawing.Point(30, 210)
+$btnOptions.Location = New-Object System.Drawing.Point(30, 250)
+$btnCancelMain.Location = New-Object System.Drawing.Point(30, 290)
+$btnRun.Location = New-Object System.Drawing.Point(30, 330)
+$panelBtns.Size = New-Object System.Drawing.Size(180, 380)
+$panelBtns.Controls.AddRange(@($btnAdd, $btnAddFile, $btnRemove, $btnRemoveFile, $btnClear, $btnClearLog, $btnOptions, $btnCancelMain, $btnRun))
+
+# Drag&Drop para ficheiros e pastas no listBox único
+$listBox.Add_DragDrop({
+    $items = $_.Data.GetData([System.Windows.Forms.DataFormats]::FileDrop)
+    foreach ($item in $items) {
+        if (Test-Path -LiteralPath $item -PathType Container) {
+            if (-not $selectedFolders.Contains($item)) {
+                $selectedFolders.Add($item)
+                [void]$listBox.Items.Add("[Pasta] $item")
+                Add-LogLine -TextBox $txtLog -Text "Pasta adicionada por arrastar: $item"
+            }
+        } elseif (Test-Path -LiteralPath $item -PathType Leaf) {
+            if (-not $selectedFiles.Contains($item)) {
+                $selectedFiles.Add($item)
+                [void]$listBox.Items.Add("[Ficheiro] $item")
+                Add-LogLine -TextBox $txtLog -Text "Ficheiro adicionado por arrastar: $item"
+            }
+        }
+    }
+    Refresh-UiState
+})
+$listBox.Add_DragEnter({
+    if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) {
+        $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy
+    } else {
+        $_.Effect = [System.Windows.Forms.DragDropEffects]::None
+    }
+})
+
+# Botão para adicionar ficheiros
+$btnAddFile.Add_Click({
+    $dlg = New-Object System.Windows.Forms.OpenFileDialog
+    $dlg.Title = "Selecione um ou mais ficheiros para adicionar"
+    $dlg.Multiselect = $true
+    if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        foreach ($file in $dlg.FileNames) {
+            if (-not $selectedFiles.Contains($file)) {
+                $selectedFiles.Add($file)
+                [void]$listBox.Items.Add("[Ficheiro] $file")
+                Add-LogLine -TextBox $txtLog -Text "Ficheiro adicionado: $file"
+            }
+        }
+        Refresh-UiState
+    }
+})
+# Botão para remover ficheiros
+$btnRemoveFile.Add_Click({
+    if ($listBox.SelectedItems.Count -eq 0) { return }
+    $toRemove = @()
+    foreach ($item in $listBox.SelectedItems) {
+        if ($item -like '[Ficheiro]*') {
+            $filePath = $item -replace '^\[Ficheiro\] ', ''
+            $toRemove += $filePath
+        }
+    }
+    foreach ($filePath in $toRemove) {
+        [void]$selectedFiles.Remove($filePath)
+        [void]$listBox.Items.Remove("[Ficheiro] $filePath")
+        Add-LogLine -TextBox $txtLog -Text "Ficheiro removido: $filePath"
+    }
+    Refresh-UiState
+})
+# Botão para remover pastas
+$btnRemove.Add_Click({
+    if ($listBox.SelectedItems.Count -eq 0) { return }
+    $toRemove = @()
+    foreach ($item in $listBox.SelectedItems) {
+        if ($item -like '[Pasta]*') {
+            $folderPath = $item -replace '^\[Pasta\] ', ''
+            $toRemove += $folderPath
+        }
+    }
+    foreach ($folderPath in $toRemove) {
+        [void]$selectedFolders.Remove($folderPath)
+        [void]$listBox.Items.Remove("[Pasta] $folderPath")
+        Add-LogLine -TextBox $txtLog -Text "Pasta removida: $folderPath"
+    }
+    Refresh-UiState
+})
+Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
