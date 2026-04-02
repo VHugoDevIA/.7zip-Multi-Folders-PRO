@@ -335,11 +335,13 @@ function Build-SevenZipArguments {
 $form = New-Object System.Windows.Forms.Form
 $form.Text = $AppTitle
 $form.Size = New-Object System.Drawing.Size(1080, 930)
-$form.MinimumSize = New-Object System.Drawing.Size(1080, 930)
+$form.MinimumSize = New-Object System.Drawing.Size(800, 600)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "Sizable"
 $form.MaximizeBox = $true
 $form.AllowDrop = $true
+$form.BackColor = [System.Drawing.Color]::FromArgb(245, 245, 245)
+$form.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
 
 $linkEmail = New-Object System.Windows.Forms.LinkLabel
 $linkEmail.Text = "VHugoDevIA@gmail.com"
@@ -365,30 +367,45 @@ $btnAdd = New-Object System.Windows.Forms.Button
 $btnAdd.Text = "Adicionar pasta"
 $btnAdd.Location = New-Object System.Drawing.Point(20, 68)
 $btnAdd.Size = New-Object System.Drawing.Size(130, 32)
+$btnAdd.FlatStyle = "Flat"
+$btnAdd.BackColor = [System.Drawing.Color]::FromArgb(0, 122, 204)
+$btnAdd.ForeColor = [System.Drawing.Color]::White
 $form.Controls.Add($btnAdd)
 
 $btnRemove = New-Object System.Windows.Forms.Button
 $btnRemove.Text = "Remover selecionada"
 $btnRemove.Location = New-Object System.Drawing.Point(160, 68)
 $btnRemove.Size = New-Object System.Drawing.Size(150, 32)
+$btnRemove.FlatStyle = "Flat"
+$btnRemove.BackColor = [System.Drawing.Color]::FromArgb(204, 0, 0)
+$btnRemove.ForeColor = [System.Drawing.Color]::White
 $form.Controls.Add($btnRemove)
 
 $btnClear = New-Object System.Windows.Forms.Button
 $btnClear.Text = "Limpar lista"
 $btnClear.Location = New-Object System.Drawing.Point(320, 68)
 $btnClear.Size = New-Object System.Drawing.Size(110, 32)
+$btnClear.FlatStyle = "Flat"
+$btnClear.BackColor = [System.Drawing.Color]::FromArgb(255, 193, 7)
+$btnClear.ForeColor = [System.Drawing.Color]::Black
 $form.Controls.Add($btnClear)
 
 $btnClearLog = New-Object System.Windows.Forms.Button
 $btnClearLog.Text = "Limpar log"
 $btnClearLog.Location = New-Object System.Drawing.Point(440, 68)
 $btnClearLog.Size = New-Object System.Drawing.Size(110, 32)
+$btnClearLog.FlatStyle = "Flat"
+$btnClearLog.BackColor = [System.Drawing.Color]::FromArgb(255, 193, 7)
+$btnClearLog.ForeColor = [System.Drawing.Color]::Black
 $form.Controls.Add($btnClearLog)
 
 $btnOptions = New-Object System.Windows.Forms.Button
 $btnOptions.Text = "Opções..."
 $btnOptions.Location = New-Object System.Drawing.Point(560, 68)
 $btnOptions.Size = New-Object System.Drawing.Size(110, 32)
+$btnOptions.FlatStyle = "Flat"
+$btnOptions.BackColor = [System.Drawing.Color]::FromArgb(108, 117, 125)
+$btnOptions.ForeColor = [System.Drawing.Color]::White
 $form.Controls.Add($btnOptions)
 
 $btnCancelMain = New-Object System.Windows.Forms.Button
@@ -396,6 +413,9 @@ $btnCancelMain.Text = "Cancelar"
 $btnCancelMain.Location = New-Object System.Drawing.Point(800, 68)
 $btnCancelMain.Size = New-Object System.Drawing.Size(110, 32)
 $btnCancelMain.Enabled = $false
+$btnCancelMain.FlatStyle = "Flat"
+$btnCancelMain.BackColor = [System.Drawing.Color]::FromArgb(220, 53, 69)
+$btnCancelMain.ForeColor = [System.Drawing.Color]::White
 $form.Controls.Add($btnCancelMain)
 
 $btnRun = New-Object System.Windows.Forms.Button
@@ -403,6 +423,9 @@ $btnRun.Text = "Iniciar"
 $btnRun.Location = New-Object System.Drawing.Point(920, 68)
 $btnRun.Size = New-Object System.Drawing.Size(120, 32)
 $btnRun.Enabled = $false
+$btnRun.FlatStyle = "Flat"
+$btnRun.BackColor = [System.Drawing.Color]::FromArgb(40, 167, 69)
+$btnRun.ForeColor = [System.Drawing.Color]::White
 $form.Controls.Add($btnRun)
 
 $listBox = New-Object System.Windows.Forms.ListBox
@@ -785,6 +808,8 @@ $btnOptions.Add_Click({
     $optForm.FormBorderStyle = "FixedDialog"
     $optForm.MaximizeBox = $false
     $optForm.MinimizeBox = $false
+    $optForm.BackColor = [System.Drawing.Color]::FromArgb(245, 245, 245)
+    $optForm.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
 
     $chkOpenLog = New-Object System.Windows.Forms.CheckBox
     $chkOpenLog.Text = "Abrir pasta do log no final das operações"
@@ -811,6 +836,9 @@ $btnOptions.Add_Click({
     $btnOk.Location = New-Object System.Drawing.Point(220, 155)
     $btnOk.Size = New-Object System.Drawing.Size(75, 30)
     $btnOk.DialogResult = [System.Windows.Forms.DialogResult]::OK
+    $btnOk.FlatStyle = "Flat"
+    $btnOk.BackColor = [System.Drawing.Color]::FromArgb(40, 167, 69)
+    $btnOk.ForeColor = [System.Drawing.Color]::White
     $optForm.Controls.Add($btnOk)
 
     $btnOptCancel = New-Object System.Windows.Forms.Button
@@ -818,6 +846,9 @@ $btnOptions.Add_Click({
     $btnOptCancel.Location = New-Object System.Drawing.Point(305, 155)
     $btnOptCancel.Size = New-Object System.Drawing.Size(75, 30)
     $btnOptCancel.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+    $btnOptCancel.FlatStyle = "Flat"
+    $btnOptCancel.BackColor = [System.Drawing.Color]::FromArgb(108, 117, 125)
+    $btnOptCancel.ForeColor = [System.Drawing.Color]::White
     $optForm.Controls.Add($btnOptCancel)
 
     $optForm.AcceptButton = $btnOk
