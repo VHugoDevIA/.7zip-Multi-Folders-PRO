@@ -737,101 +737,12 @@ $btnRun.Add_Click({
         Start-Process "explorer.exe" -ArgumentList "/select,""$($script:CurrentLogFile)"""
     }
 
+    Add-LogLine -TextBox $txtLog -Text "Processo terminado"
+})
+
 # --- Inicialização ---
 Load-State
 Refresh-UiState
 
 # --- Mostrar form ---
 [void]$form.ShowDialog()
-			$psi.WorkingDirectory = $dir
-			$psi.Arguments = $argString
-			$psi.UseShellExecute = $false
-			$psi.RedirectStandardOutput = $true
-			$psi.RedirectStandardError = $true
-			$psi.CreateNoWindow = $true
-			$p = New-Object System.Diagnostics.Process
-			$p.StartInfo = $psi
-			$null = $p.Start()
-			$script:CurrentProcess = $p
-			while (-not $p.HasExited) {
-				while (($line = $p.StandardOutput.ReadLine()) -ne $null) {
-					if ($line -match '(\d+)%') {
-						$pct = [int]$matches[1]
-						if ($pct -ge 0 -and $pct -le 100) { $progressFolder.Value = $pct }
-					}
-					if (-not [string]::IsNullOrWhiteSpace($line)) { Add-LogLine -TextBox $txtLog -Text $line }
-					[System.Windows.Forms.Application]::DoEvents()
-				}
-				while (($errLine = $p.StandardError.ReadLine()) -ne $null) {
-					if (-not [string]::IsNullOrWhiteSpace($errLine)) { Add-LogLine -TextBox $txtLog -Text "[ERRO] $errLine" }
-					[System.Windows.Forms.Application]::DoEvents()
-				}
-				Start-Sleep -Milliseconds 120
-				[System.Windows.Forms.Application]::DoEvents()
-				if ($script:CancelRequested) { break }
-			}
-			$p.WaitForExit()
-			$exitCode = $p.ExitCode
-			$script:CurrentProcess = $null
-			if ($script:CancelRequested) {
-				Add-LogLine -TextBox $txtLog -Text "[CANCELADO] Processo interrompido: $folderName"
-				break
-			} elseif ($exitCode -eq 0) {
-				$progressFolder.Value = 100
-				Add-LogLine -TextBox $txtLog -Text "[OK] Concluído: $folderName"
-				# Eliminar ficheiros se opção ativa e não for partilhado
-				if ($chkDeleteFiles.Checked -and -not $chkShared.Checked) {
-					foreach ($f in $files) {
-						try {
-							Remove-Item -LiteralPath $f -Force -ErrorAction Stop
-							Add-LogLine -TextBox $txtLog -Text "[OK] Ficheiro eliminado: $f"
-						} catch {
-							Add-LogLine -TextBox $txtLog -Text "[AVISO] Não foi possível eliminar o ficheiro: $f"
-						}
-					}
-				}
-			} else {
-				Add-LogLine -TextBox $txtLog -Text "[ERRO] Falhou: $folderName (código $exitCode)"
-			}
-			$progressTotal.Value = [math]::Min([math]::Round(($currentIndex / $totalCount) * 100), 100)
-			[System.Windows.Forms.Application]::DoEvents()
-		}
-	}
-})
-# Versão 7 do script baseada em v6_7
-# - Permite inserir múltiplos ficheiros para compactar
-# - Cria um ZIP por cada pasta onde estão os ficheiros
-# - Acrescenta opção de eliminar ficheiros após compressão (como já existe para pastas)
-# - Se "comprimir ficheiros partilhados" estiver ativo, não elimina ficheiros no fim
-
-# O código será copiado e adaptado da versão v6_7
-
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-[System.Windows.Forms.Application]::EnableVisualStyles()
-
-$SevenZip = "C:\Program Files\7-Zip\7z.exe"
-$AppTitle = "ZIP Multiplas Pasta/Ficheiros - PRO v7.0"
-$MailSubject = "ZIP Multiplas Pasta/Ficheiros - PRO v7.0"
-$StateFile = Join-Path -Path $env:APPDATA -ChildPath "VHugoDevIA\zip_multiplas_pastas_pro_v7_state.json"
-$script:CurrentLogFile = $null
-$script:ComputerSuffix = if ($env:COMPUTERNAME -and $env:COMPUTERNAME.Length -ge 4) { $env:COMPUTERNAME.Substring($env:COMPUTERNAME.Length - 4).ToUpper() } elseif ($env:COMPUTERNAME) { $env:COMPUTERNAME.ToUpper() } else { "PC" }
-
-# --- Listas separadas para pastas e ficheiros ---
-$selectedFolders = New-Object 'System.Collections.Generic.List[string]'
-$selectedFiles = New-Object 'System.Collections.Generic.List[string]'
-
-$optionFlags = @{
-	openLogFolderAfterFinish = $true
-	confirmBeforeClearList   = $false
-}
-
-# ...restante código copiado da v6_7, com as seguintes alterações principais...
-# 1. Adicionar botões para adicionar/remover ficheiros
-# 2. Permitir drag&drop de ficheiros e pastas
-# 3. No processamento, se houver ficheiros, agrupar por pasta e criar um ZIP por pasta
-# 4. Adicionar opção de eliminar ficheiros após compressão (desativada se 'comprimir ficheiros partilhados')
-# 5. Atualizar Refresh-UiState para ativar o botão Iniciar se houver ficheiros ou pastas
-
-#
-# O código completo será inserido nas próximas etapas...
