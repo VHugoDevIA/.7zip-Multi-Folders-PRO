@@ -428,18 +428,49 @@ $btnRun.BackColor = [System.Drawing.Color]::FromArgb(40, 167, 69)
 $btnRun.ForeColor = [System.Drawing.Color]::White
 $form.Controls.Add($btnRun)
 
+
+# Painel para seleção de ficheiros e botões lado a lado
+$panelSelect = New-Object System.Windows.Forms.Panel
+$panelSelect.Location = New-Object System.Drawing.Point(20, 113)
+$panelSelect.Size = New-Object System.Drawing.Size(1020, 120)
+$form.Controls.Add($panelSelect)
+
 $listBox = New-Object System.Windows.Forms.ListBox
-$listBox.Location = New-Object System.Drawing.Point(20, 113)
-$listBox.Size = New-Object System.Drawing.Size(1020, 120)
+$listBox.Location = New-Object System.Drawing.Point(0, 0)
+$listBox.Size = New-Object System.Drawing.Size(510, 120)
 $listBox.SelectionMode = "MultiExtended"
 $listBox.HorizontalScrollbar = $true
 $listBox.AllowDrop = $true
-$form.Controls.Add($listBox)
+$panelSelect.Controls.Add($listBox)
 
+# Painel lateral para botões
+$panelBtns = New-Object System.Windows.Forms.Panel
+$panelBtns.Location = New-Object System.Drawing.Point(520, 0)
+$panelBtns.Size = New-Object System.Drawing.Size(500, 120)
+$panelSelect.Controls.Add($panelBtns)
+
+$btnAdd.Location = New-Object System.Drawing.Point(10, 10)
+$btnRemove.Location = New-Object System.Drawing.Point(10, 50)
+$btnClear.Location = New-Object System.Drawing.Point(10, 90)
+$btnClearLog.Location = New-Object System.Drawing.Point(130, 10)
+$btnOptions.Location = New-Object System.Drawing.Point(130, 50)
+$btnCancelMain.Location = New-Object System.Drawing.Point(250, 10)
+$btnRun.Location = New-Object System.Drawing.Point(250, 50)
+
+$panelBtns.Controls.Add($btnAdd)
+$panelBtns.Controls.Add($btnRemove)
+$panelBtns.Controls.Add($btnClear)
+$panelBtns.Controls.Add($btnClearLog)
+$panelBtns.Controls.Add($btnOptions)
+$panelBtns.Controls.Add($btnCancelMain)
+$panelBtns.Controls.Add($btnRun)
+
+
+# Compressão mais larga
 $grpMain = New-Object System.Windows.Forms.GroupBox
 $grpMain.Text = "Compressão"
 $grpMain.Location = New-Object System.Drawing.Point(20, 248)
-$grpMain.Size = New-Object System.Drawing.Size(500, 255)
+$grpMain.Size = New-Object System.Drawing.Size(700, 255)
 $form.Controls.Add($grpMain)
 
 $lblFormat = New-Object System.Windows.Forms.Label
@@ -590,10 +621,12 @@ $chkDelete.Size = New-Object System.Drawing.Size(190, 22)
 $chkDelete.Checked = $true
 $grpMain.Controls.Add($chkDelete)
 
+
+# Encriptação mais estreita
 $grpEnc = New-Object System.Windows.Forms.GroupBox
 $grpEnc.Text = "Encriptação"
-$grpEnc.Location = New-Object System.Drawing.Point(540, 248)
-$grpEnc.Size = New-Object System.Drawing.Size(500, 255)
+$grpEnc.Location = New-Object System.Drawing.Point(730, 248)
+$grpEnc.Size = New-Object System.Drawing.Size(310, 255)
 $form.Controls.Add($grpEnc)
 
 $lblPass1 = New-Object System.Windows.Forms.Label
@@ -644,11 +677,19 @@ $chkEncryptHeaders.Location = New-Object System.Drawing.Point(15, 160)
 $chkEncryptHeaders.Size = New-Object System.Drawing.Size(250, 22)
 $grpEnc.Controls.Add($chkEncryptHeaders)
 
+
+# Painel horizontal para opções extra e barras de progresso
+$panelBottom = New-Object System.Windows.Forms.Panel
+$panelBottom.Location = New-Object System.Drawing.Point(20, 518)
+$panelBottom.Size = New-Object System.Drawing.Size(1020, 130)
+$form.Controls.Add($panelBottom)
+
+# Opções extra (meia janela)
 $grpExtra = New-Object System.Windows.Forms.GroupBox
 $grpExtra.Text = "Opções extra"
-$grpExtra.Location = New-Object System.Drawing.Point(20, 518)
-$grpExtra.Size = New-Object System.Drawing.Size(1020, 80)
-$form.Controls.Add($grpExtra)
+$grpExtra.Location = New-Object System.Drawing.Point(0, 0)
+$grpExtra.Size = New-Object System.Drawing.Size(500, 80)
+$panelBottom.Controls.Add($grpExtra)
 
 $lblExtraParams = New-Object System.Windows.Forms.Label
 $lblExtraParams.Text = "Parametros:"
@@ -658,34 +699,40 @@ $grpExtra.Controls.Add($lblExtraParams)
 
 $txtExtraParams = New-Object System.Windows.Forms.TextBox
 $txtExtraParams.Location = New-Object System.Drawing.Point(110, 27)
-$txtExtraParams.Size = New-Object System.Drawing.Size(890, 24)
+$txtExtraParams.Size = New-Object System.Drawing.Size(370, 24)
 $grpExtra.Controls.Add($txtExtraParams)
+
+# Painel para barras de progresso (meia janela ao lado)
+$panelProgress = New-Object System.Windows.Forms.Panel
+$panelProgress.Location = New-Object System.Drawing.Point(510, 0)
+$panelProgress.Size = New-Object System.Drawing.Size(510, 130)
+$panelBottom.Controls.Add($panelProgress)
 
 $lblStatus = New-Object System.Windows.Forms.Label
 $lblStatus.Text = "Estado: parado"
-$lblStatus.Location = New-Object System.Drawing.Point(20, 613)
-$lblStatus.Size = New-Object System.Drawing.Size(1020, 20)
-$form.Controls.Add($lblStatus)
+$lblStatus.Location = New-Object System.Drawing.Point(0, 0)
+$lblStatus.Size = New-Object System.Drawing.Size(500, 20)
+$panelProgress.Controls.Add($lblStatus)
 
 $progressFolder = New-Object System.Windows.Forms.ProgressBar
-$progressFolder.Location = New-Object System.Drawing.Point(20, 638)
-$progressFolder.Size = New-Object System.Drawing.Size(1020, 24)
+$progressFolder.Location = New-Object System.Drawing.Point(0, 30)
+$progressFolder.Size = New-Object System.Drawing.Size(500, 24)
 $progressFolder.Minimum = 0
 $progressFolder.Maximum = 100
-$form.Controls.Add($progressFolder)
+$panelProgress.Controls.Add($progressFolder)
 
 $lblTotal = New-Object System.Windows.Forms.Label
 $lblTotal.Text = "Progresso total:"
-$lblTotal.Location = New-Object System.Drawing.Point(20, 668)
+$lblTotal.Location = New-Object System.Drawing.Point(0, 60)
 $lblTotal.Size = New-Object System.Drawing.Size(200, 20)
-$form.Controls.Add($lblTotal)
+$panelProgress.Controls.Add($lblTotal)
 
 $progressTotal = New-Object System.Windows.Forms.ProgressBar
-$progressTotal.Location = New-Object System.Drawing.Point(20, 693)
-$progressTotal.Size = New-Object System.Drawing.Size(1020, 24)
+$progressTotal.Location = New-Object System.Drawing.Point(0, 90)
+$progressTotal.Size = New-Object System.Drawing.Size(500, 24)
 $progressTotal.Minimum = 0
 $progressTotal.Maximum = 100
-$form.Controls.Add($progressTotal)
+$panelProgress.Controls.Add($progressTotal)
 
 $txtLog = New-Object System.Windows.Forms.TextBox
 $txtLog.Location = New-Object System.Drawing.Point(20, 728)
