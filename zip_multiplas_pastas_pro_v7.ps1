@@ -42,6 +42,189 @@ function Refresh-UiState {
     if ($chkShared.Checked) { $chkDeleteFiles.Checked = $false }
 }
 
+function Update-DynamicOptions {
+    $format = [string]$cmbFormat.SelectedItem
+    $method = [string]$cmbMethod.SelectedItem
+
+    $cmbSolid.Enabled = ($format -eq "7z")
+    $chkEncryptHeaders.Enabled = ($format -eq "7z")
+    $chkSFX.Enabled = ($format -eq "7z")
+    $cmbEncMethod.Enabled = $true
+
+    if ($format -eq "zip") {
+        switch ($method) {
+            "Deflate" {
+                $cmbDict.SelectedItem = "32KB"
+                $cmbDict.Enabled = $false
+                $cmbWord.Enabled = $true
+            }
+            "Deflate64" {
+                $cmbDict.Enabled = $false
+                $cmbWord.Enabled = $true
+            }
+            default {
+                $cmbDict.Enabled = $true
+                $cmbWord.Enabled = $true
+            }
+        }
+    } else {
+        $cmbDict.Enabled = $true
+        $cmbWord.Enabled = $true
+    }
+}
+
+function Update-FormatOptions {
+    $format = [string]$cmbFormat.SelectedItem
+    $prevMethod = [string]$cmbMethod.SelectedItem
+    $prevDict = [string]$cmbDict.SelectedItem
+    $prevWord = [string]$cmbWord.SelectedItem
+    $prevSolid = [string]$cmbSolid.SelectedItem
+    $prevEnc = [string]$cmbEncMethod.SelectedItem
+
+    $cmbMethod.Items.Clear()
+    $cmbDict.Items.Clear()
+    $cmbWord.Items.Clear()
+    $cmbSolid.Items.Clear()
+    $cmbEncMethod.Items.Clear()
+
+    if ($format -eq "zip") {
+        [void]$cmbMethod.Items.AddRange(@("Automatico","Deflate","Deflate64","BZip2","LZMA","PPMd"))
+        [void]$cmbDict.Items.AddRange(@("Automatico","32KB","64KB","128KB","256KB","512KB","1MB","2MB","4MB","8MB","16MB","32MB"))
+        [void]$cmbWord.Items.AddRange(@("Automatico","32","64","128","192","256","273"))
+        [void]$cmbSolid.Items.AddRange(@("Automatico"))
+        [void]$cmbEncMethod.Items.AddRange(@("ZipCrypto","AES128","AES192","AES256"))
+
+        if ($prevMethod -and $cmbMethod.Items.Contains($prevMethod)) { $cmbMethod.SelectedItem = $prevMethod } else { $cmbMethod.SelectedItem = "Automatico" }
+        if ($prevDict -and $cmbDict.Items.Contains($prevDict)) { $cmbDict.SelectedItem = $prevDict } else { $cmbDict.SelectedItem = "Automatico" }
+        if ($prevWord -and $cmbWord.Items.Contains($prevWord)) { $cmbWord.SelectedItem = $prevWord } else { $cmbWord.SelectedItem = "Automatico" }
+        $cmbSolid.SelectedItem = "Automatico"
+        if ($prevEnc -and $cmbEncMethod.Items.Contains($prevEnc)) { $cmbEncMethod.SelectedItem = $prevEnc } else { $cmbEncMethod.SelectedItem = "ZipCrypto" }
+    }
+    else {
+        [void]$cmbMethod.Items.AddRange(@("Automatico","LZMA2","LZMA","PPMd","BZip2"))
+        [void]$cmbDict.Items.AddRange(@("Automatico","64KB","1MB","2MB","4MB","8MB","16MB","32MB","64MB","128MB","256MB"))
+        [void]$cmbWord.Items.AddRange(@("Automatico","8","12","16","24","32","48","64","96","128","192","273"))
+        [void]$cmbSolid.Items.AddRange(@("Automatico","Off","On","1m","2m","4m","8m","16m","32m","64m","128m","256m","512m"))
+        [void]$cmbEncMethod.Items.AddRange(@("AES256"))
+
+        if ($prevMethod -and $cmbMethod.Items.Contains($prevMethod)) { $cmbMethod.SelectedItem = $prevMethod } else { $cmbMethod.SelectedItem = "Automatico" }
+        if ($prevDict -and $cmbDict.Items.Contains($prevDict)) { $cmbDict.SelectedItem = $prevDict } else { $cmbDict.SelectedItem = "Automatico" }
+        if ($prevWord -and $cmbWord.Items.Contains($prevWord)) { $cmbWord.SelectedItem = $prevWord } else { $cmbWord.SelectedItem = "Automatico" }
+        if ($prevSolid -and $cmbSolid.Items.Contains($prevSolid)) { $cmbSolid.SelectedItem = $prevSolid } else { $cmbSolid.SelectedItem = "Automatico" }
+        $cmbEncMethod.SelectedItem = "AES256"
+    }
+
+    Update-DynamicOptions
+}
+
+function Build-SevenZipArguments {
+    param(
+        [string]$ArchivePath,
+        [string]$FolderName,
+        [string]$Format,
+        [string]$Level,
+        [int]$Threads,
+        [bool]$DeleteAfter,
+        [bool]$CompressShared,
+        [bool]$CreateSfx,
+        [string]$VolumeSize,
+        [string]$Password,
+        [string]$EncryptionMethod,
+        [bool]$EncryptHeaders,
+        [string]$Method,
+        [string]$DictionarySize,
+        [string]$WordSize,
+        [string]$SolidBlock,
+        [string]$ExtraParams
+    )
+
+    $args = New-Object System.Collections.Generic.List[string]
+    $args.Add("a")
+    $args.Add("-t$Format")
+    $args.Add("`"$ArchivePath`"")
+    $args.Add("`"$FolderName`"")
+    $args.Add("-mx=$Level")
+    $args.Add("-mmt=$Threads")
+    $args.Add("-bsp1")
+    $args.Add("-bso1")
+    $args.Add("-bse1")
+    $args.Add("-y")
+
+    if ($CompressShared) { $args.Add("-ssw") }
+    if (-not [string]::IsNullOrWhiteSpace($VolumeSize)) { $args.Add("-v$($VolumeSize.Trim())") }
+    if (($Format -eq "7z") -and $CreateSfx) { $args.Add("-sfx") }
+
+    if (-not [string]::IsNullOrEmpty($Password)) {
+        $args.Add("-p`"$Password`"")
+        if ($Format -eq "zip") {
+            switch ($EncryptionMethod) {
+                "ZipCrypto" { $args.Add("-mem=ZipCrypto") }
+                "AES128" { $args.Add("-mem=AES128") }
+                "AES192" { $args.Add("-mem=AES192") }
+                "AES256" { $args.Add("-mem=AES256") }
+            }
+        } elseif ($Format -eq "7z") {
+            if ($EncryptHeaders) { $args.Add("-mhe=on") }
+        }
+    }
+
+    if ($Format -eq "zip") {
+        if ($Method -and ($Method -ne "Automatico")) { $args.Add("-mm=$Method") }
+
+        switch ($Method) {
+            "Deflate" {
+                if ($WordSize -and ($WordSize -ne "Automatico")) { $args.Add("-mfb=$WordSize") }
+            }
+            "Deflate64" {
+                if ($WordSize -and ($WordSize -ne "Automatico")) { $args.Add("-mfb=$WordSize") }
+            }
+            "BZip2" {
+                if ($DictionarySize -and ($DictionarySize -ne "Automatico")) {
+                    $dict = $DictionarySize.ToLower() -replace "kb","k" -replace "mb","m"
+                    $args.Add("-md=$dict")
+                }
+                if ($WordSize -and ($WordSize -ne "Automatico")) { $args.Add("-mfb=$WordSize") }
+            }
+            "LZMA" {
+                if ($DictionarySize -and ($DictionarySize -ne "Automatico")) {
+                    $dict = $DictionarySize.ToLower() -replace "kb","k" -replace "mb","m"
+                    $args.Add("-md=$dict")
+                }
+                if ($WordSize -and ($WordSize -ne "Automatico")) { $args.Add("-mfb=$WordSize") }
+            }
+            "PPMd" {
+                if ($DictionarySize -and ($DictionarySize -ne "Automatico")) {
+                    $dict = $DictionarySize.ToLower() -replace "kb","k" -replace "mb","m"
+                    $args.Add("-md=$dict")
+                }
+                if ($WordSize -and ($WordSize -ne "Automatico")) { $args.Add("-mfb=$WordSize") }
+            }
+        }
+    } elseif ($Format -eq "7z") {
+        if ($Method -and ($Method -ne "Automatico")) { $args.Add("-mm=$Method") }
+        if ($DictionarySize -and ($DictionarySize -ne "Automatico")) {
+            $dict = $DictionarySize.ToLower() -replace "kb","k" -replace "mb","m"
+            $args.Add("-md=$dict")
+        }
+        if ($WordSize -and ($WordSize -ne "Automatico")) { $args.Add("-mfb=$WordSize") }
+        if ($SolidBlock -and ($SolidBlock -ne "Automatico")) {
+            switch ($SolidBlock) {
+                "Off" { $args.Add("-ms=off") }
+                "On" { $args.Add("-ms=on") }
+                default { $args.Add("-ms=$SolidBlock") }
+            }
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ExtraParams)) {
+        foreach ($piece in ($ExtraParams.Trim() -split '\s+')) {
+            if ($piece.Trim().Length -gt 0) { $args.Add($piece.Trim()) }
+        }
+    }
+
+    return ,$args
+}
+
 function Save-State {
     $state = @{
         windowSize = @{ Width = $form.Width; Height = $form.Height }
@@ -49,14 +232,21 @@ function Save-State {
         format = $cmbFormat.SelectedItem
         compression = $cmbCompression.SelectedItem
         method = $cmbMethod.SelectedItem
-        threads = $txtThreads.Text
-        password = $txtPassword.Text
+        dictSize = $cmbDict.SelectedItem
+        wordSize = $cmbWord.SelectedItem
+        solidBlocks = $cmbSolid.SelectedItem
+        threads = $numThreads.Value
+        volumeSize = $txtVolume.Text
+        updateMode = $cmbUpdateMode.SelectedItem
+        pathMode = $cmbPathMode.SelectedItem
+        createSfx = $chkSfx.Checked
+        password = $txtPass1.Text
+        password2 = $txtPass2.Text
+        encMethod = $cmbEncMethod.SelectedItem
         encryptHeaders = $chkEncryptHeaders.Checked
         deleteAfterCompress = $chkDeleteFiles.Checked
         sharedFiles = $chkShared.Checked
-        sfx = $chkSFX.Checked
         relativePath = $chkRelative.Checked
-        volumeSize = $txtVolume.Text
         extraParams = $txtExtra.Text
         outputFolder = $txtOutput.Text
         openLogFolder = $optionFlags.openLogFolderAfterFinish
@@ -76,14 +266,21 @@ function Load-State {
             if ($state.format) { $cmbFormat.SelectedItem = $state.format }
             if ($state.compression) { $cmbCompression.SelectedItem = $state.compression }
             if ($state.method) { $cmbMethod.SelectedItem = $state.method }
-            if ($state.threads) { $txtThreads.Text = $state.threads }
-            if ($state.password) { $txtPassword.Text = $state.password }
+            if ($state.dictSize) { $cmbDict.SelectedItem = $state.dictSize }
+            if ($state.wordSize) { $cmbWord.SelectedItem = $state.wordSize }
+            if ($state.solidBlocks) { $cmbSolid.SelectedItem = $state.solidBlocks }
+            if ($state.threads) { $numThreads.Value = [int]$state.threads }
+            if ($state.volumeSize) { $txtVolume.Text = $state.volumeSize }
+            if ($state.updateMode) { $cmbUpdateMode.SelectedItem = $state.updateMode }
+            if ($state.pathMode) { $cmbPathMode.SelectedItem = $state.pathMode }
+            if ($state.createSfx) { $chkSFX.Checked = $state.createSfx }
+            if ($state.password) { $txtPass1.Text = $state.password }
+            if ($state.password2) { $txtPass2.Text = $state.password2 }
+            if ($state.encMethod) { $cmbEncMethod.SelectedItem = $state.encMethod }
             if ($state.encryptHeaders) { $chkEncryptHeaders.Checked = $state.encryptHeaders }
             if ($state.deleteAfterCompress) { $chkDeleteFiles.Checked = $state.deleteAfterCompress }
             if ($state.sharedFiles) { $chkShared.Checked = $state.sharedFiles }
-            if ($state.sfx) { $chkSFX.Checked = $state.sfx }
             if ($state.relativePath) { $chkRelative.Checked = $state.relativePath }
-            if ($state.volumeSize) { $txtVolume.Text = $state.volumeSize }
             if ($state.extraParams) { $txtExtra.Text = $state.extraParams }
             if ($state.outputFolder) { $txtOutput.Text = $state.outputFolder }
             if ($state.openLogFolder) { $optionFlags.openLogFolderAfterFinish = $state.openLogFolder }
@@ -109,7 +306,7 @@ $form.Add_FormClosing({ Save-State })
 $grpCompression = New-Object System.Windows.Forms.GroupBox
 $grpCompression.Text = "Configuração de compressão"
 $grpCompression.Location = New-Object System.Drawing.Point(20, 20)
-$grpCompression.Size = New-Object System.Drawing.Size(430, 120)
+$grpCompression.Size = New-Object System.Drawing.Size(700, 230)
 $form.Controls.Add($grpCompression)
 
 # --- Labels e ComboBoxes dentro do grpCompression ---
@@ -121,66 +318,121 @@ $grpCompression.Controls.Add($lblFormat)
 
 $cmbFormat = New-Object System.Windows.Forms.ComboBox
 $cmbFormat.Location = New-Object System.Drawing.Point(15, 45)
-$cmbFormat.Size = New-Object System.Drawing.Size(100, 20)
+$cmbFormat.Size = New-Object System.Drawing.Size(120, 23)
+$cmbFormat.DropDownStyle = "DropDownList"
 $cmbFormat.Items.AddRange(@("zip", "7z"))
 $cmbFormat.SelectedIndex = 0
 $grpCompression.Controls.Add($cmbFormat)
 
 $lblCompression = New-Object System.Windows.Forms.Label
 $lblCompression.Text = "Compressão:"
-$lblCompression.Location = New-Object System.Drawing.Point(150, 25)
+$lblCompression.Location = New-Object System.Drawing.Point(160, 25)
 $lblCompression.Size = New-Object System.Drawing.Size(80, 20)
 $grpCompression.Controls.Add($lblCompression)
 
 $cmbCompression = New-Object System.Windows.Forms.ComboBox
-$cmbCompression.Location = New-Object System.Drawing.Point(150, 45)
-$cmbCompression.Size = New-Object System.Drawing.Size(100, 20)
+$cmbCompression.Location = New-Object System.Drawing.Point(160, 45)
+$cmbCompression.Size = New-Object System.Drawing.Size(120, 23)
+$cmbCompression.DropDownStyle = "DropDownList"
 $cmbCompression.Items.AddRange(@("0", "1", "3", "5", "7", "9"))
 $cmbCompression.SelectedIndex = 3
 $grpCompression.Controls.Add($cmbCompression)
 
 $lblMethod = New-Object System.Windows.Forms.Label
 $lblMethod.Text = "Método:"
-$lblMethod.Location = New-Object System.Drawing.Point(285, 25)
+$lblMethod.Location = New-Object System.Drawing.Point(310, 25)
 $lblMethod.Size = New-Object System.Drawing.Size(60, 20)
 $grpCompression.Controls.Add($lblMethod)
 
 $cmbMethod = New-Object System.Windows.Forms.ComboBox
-$cmbMethod.Location = New-Object System.Drawing.Point(285, 45)
-$cmbMethod.Size = New-Object System.Drawing.Size(100, 20)
-$cmbMethod.Items.AddRange(@("LZMA2", "LZMA", "PPMd", "BZip2", "Deflate", "Deflate64"))
-$cmbMethod.SelectedIndex = 0
+$cmbMethod.Location = New-Object System.Drawing.Point(310, 45)
+$cmbMethod.Size = New-Object System.Drawing.Size(120, 23)
+$cmbMethod.DropDownStyle = "DropDownList"
 $grpCompression.Controls.Add($cmbMethod)
+
+$lblDict = New-Object System.Windows.Forms.Label
+$lblDict.Text = "Dicionário:"
+$lblDict.Location = New-Object System.Drawing.Point(15, 78)
+$lblDict.Size = New-Object System.Drawing.Size(70, 20)
+$grpCompression.Controls.Add($lblDict)
+
+$cmbDict = New-Object System.Windows.Forms.ComboBox
+$cmbDict.Location = New-Object System.Drawing.Point(15, 98)
+$cmbDict.Size = New-Object System.Drawing.Size(120, 23)
+$cmbDict.DropDownStyle = "DropDownList"
+$grpCompression.Controls.Add($cmbDict)
+
+$lblWord = New-Object System.Windows.Forms.Label
+$lblWord.Text = "Tamanho palavra:"
+$lblWord.Location = New-Object System.Drawing.Point(160, 78)
+$lblWord.Size = New-Object System.Drawing.Size(100, 20)
+$grpCompression.Controls.Add($lblWord)
+
+$cmbWord = New-Object System.Windows.Forms.ComboBox
+$cmbWord.Location = New-Object System.Drawing.Point(160, 98)
+$cmbWord.Size = New-Object System.Drawing.Size(120, 23)
+$cmbWord.DropDownStyle = "DropDownList"
+$grpCompression.Controls.Add($cmbWord)
+
+$lblSolid = New-Object System.Windows.Forms.Label
+$lblSolid.Text = "Blocos sólidos:"
+$lblSolid.Location = New-Object System.Drawing.Point(310, 78)
+$lblSolid.Size = New-Object System.Drawing.Size(90, 20)
+$grpCompression.Controls.Add($lblSolid)
+
+$cmbSolid = New-Object System.Windows.Forms.ComboBox
+$cmbSolid.Location = New-Object System.Drawing.Point(310, 98)
+$cmbSolid.Size = New-Object System.Drawing.Size(120, 23)
+$cmbSolid.DropDownStyle = "DropDownList"
+$grpCompression.Controls.Add($cmbSolid)
+
+$lblUpdateMode = New-Object System.Windows.Forms.Label
+$lblUpdateMode.Text = "Se o ZIP já existir:"
+$lblUpdateMode.Location = New-Object System.Drawing.Point(15, 128)
+$lblUpdateMode.Size = New-Object System.Drawing.Size(120, 20)
+$grpCompression.Controls.Add($lblUpdateMode)
+
+$cmbUpdateMode = New-Object System.Windows.Forms.ComboBox
+$cmbUpdateMode.Location = New-Object System.Drawing.Point(15, 148)
+$cmbUpdateMode.Size = New-Object System.Drawing.Size(120, 23)
+$cmbUpdateMode.DropDownStyle = "DropDownList"
+$cmbUpdateMode.Items.AddRange(@("Adicionar", "Atualizar", "Sincronizar", "Substituir"))
+$cmbUpdateMode.SelectedIndex = 0
+$grpCompression.Controls.Add($cmbUpdateMode)
+
+$lblPathMode = New-Object System.Windows.Forms.Label
+$lblPathMode.Text = "Passar pasta ao 7-Zip:"
+$lblPathMode.Location = New-Object System.Drawing.Point(160, 128)
+$lblPathMode.Size = New-Object System.Drawing.Size(135, 20)
+$grpCompression.Controls.Add($lblPathMode)
+
+$cmbPathMode = New-Object System.Windows.Forms.ComboBox
+$cmbPathMode.Location = New-Object System.Drawing.Point(160, 148)
+$cmbPathMode.Size = New-Object System.Drawing.Size(120, 23)
+$cmbPathMode.DropDownStyle = "DropDownList"
+$cmbPathMode.Items.AddRange(@("Mantém caminho", "Relativo", "Sem caminho"))
+$cmbPathMode.SelectedIndex = 0
+$grpCompression.Controls.Add($cmbPathMode)
 
 $lblThreads = New-Object System.Windows.Forms.Label
 $lblThreads.Text = "Threads:"
-$lblThreads.Location = New-Object System.Drawing.Point(15, 75)
-$lblThreads.Size = New-Object System.Drawing.Size(55, 20)
+$lblThreads.Location = New-Object System.Drawing.Point(310, 128)
+$lblThreads.Size = New-Object System.Drawing.Size(60, 20)
 $grpCompression.Controls.Add($lblThreads)
 
-$txtThreads = New-Object System.Windows.Forms.TextBox
-$txtThreads.Location = New-Object System.Drawing.Point(15, 95)
-$txtThreads.Size = New-Object System.Drawing.Size(50, 20)
-$txtThreads.Text = "0"
-$grpCompression.Controls.Add($txtThreads)
-
-$lblPassword = New-Object System.Windows.Forms.Label
-$lblPassword.Text = "Password:"
-$lblPassword.Location = New-Object System.Drawing.Point(150, 75)
-$lblPassword.Size = New-Object System.Drawing.Size(65, 20)
-$grpCompression.Controls.Add($lblPassword)
-
-$txtPassword = New-Object System.Windows.Forms.TextBox
-$txtPassword.Location = New-Object System.Drawing.Point(150, 95)
-$txtPassword.Size = New-Object System.Drawing.Size(150, 20)
-$txtPassword.UseSystemPasswordChar = $true
-$grpCompression.Controls.Add($txtPassword)
+$numThreads = New-Object System.Windows.Forms.NumericUpDown
+$numThreads.Location = New-Object System.Drawing.Point(310, 148)
+$numThreads.Size = New-Object System.Drawing.Size(120, 23)
+$numThreads.Minimum = 0
+$numThreads.Maximum = 32
+$numThreads.Value = 0
+$grpCompression.Controls.Add($numThreads)
 
 # --- GroupBox para Destino / extras ---
 $grpOutput = New-Object System.Windows.Forms.GroupBox
 $grpOutput.Text = "Destino / extras"
-$grpOutput.Location = New-Object System.Drawing.Point(20, 150)
-$grpOutput.Size = New-Object System.Drawing.Size(630, 110)
+$grpOutput.Location = New-Object System.Drawing.Point(20, 260)
+$grpOutput.Size = New-Object System.Drawing.Size(700, 110)
 $form.Controls.Add($grpOutput)
 
 # --- Labels e TextBoxes dentro do grpOutput ---
@@ -192,18 +444,18 @@ $grpOutput.Controls.Add($lblOutput)
 
 $txtOutput = New-Object System.Windows.Forms.TextBox
 $txtOutput.Location = New-Object System.Drawing.Point(15, 45)
-$txtOutput.Size = New-Object System.Drawing.Size(450, 20)
+$txtOutput.Size = New-Object System.Drawing.Size(470, 23)
 $grpOutput.Controls.Add($txtOutput)
 
 $lblVolume = New-Object System.Windows.Forms.Label
 $lblVolume.Text = "Volume (ex: 100m):"
-$lblVolume.Location = New-Object System.Drawing.Point(480, 25)
+$lblVolume.Location = New-Object System.Drawing.Point(500, 25)
 $lblVolume.Size = New-Object System.Drawing.Size(110, 20)
 $grpOutput.Controls.Add($lblVolume)
 
 $txtVolume = New-Object System.Windows.Forms.TextBox
-$txtVolume.Location = New-Object System.Drawing.Point(480, 45)
-$txtVolume.Size = New-Object System.Drawing.Size(150, 20)
+$txtVolume.Location = New-Object System.Drawing.Point(500, 45)
+$txtVolume.Size = New-Object System.Drawing.Size(170, 23)
 $grpOutput.Controls.Add($txtVolume)
 
 $lblExtra = New-Object System.Windows.Forms.Label
@@ -214,52 +466,107 @@ $grpOutput.Controls.Add($lblExtra)
 
 $txtExtra = New-Object System.Windows.Forms.TextBox
 $txtExtra.Location = New-Object System.Drawing.Point(15, 95)
-$txtExtra.Size = New-Object System.Drawing.Size(600, 20)
+$txtExtra.Size = New-Object System.Drawing.Size(655, 23)
 $grpOutput.Controls.Add($txtExtra)
+
+# --- GroupBox de Encriptação ---
+$grpEnc = New-Object System.Windows.Forms.GroupBox
+$grpEnc.Text = "Encriptação"
+$grpEnc.Location = New-Object System.Drawing.Point(740, 20)
+$grpEnc.Size = New-Object System.Drawing.Size(320, 240)
+$form.Controls.Add($grpEnc)
+
+$lblPass1 = New-Object System.Windows.Forms.Label
+$lblPass1.Text = "Password:"
+$lblPass1.Location = New-Object System.Drawing.Point(15, 25)
+$lblPass1.Size = New-Object System.Drawing.Size(70, 20)
+$grpEnc.Controls.Add($lblPass1)
+
+$txtPass1 = New-Object System.Windows.Forms.TextBox
+$txtPass1.Location = New-Object System.Drawing.Point(15, 45)
+$txtPass1.Size = New-Object System.Drawing.Size(290, 23)
+$txtPass1.UseSystemPasswordChar = $true
+$grpEnc.Controls.Add($txtPass1)
+
+$lblPass2 = New-Object System.Windows.Forms.Label
+$lblPass2.Text = "Repetir password:"
+$lblPass2.Location = New-Object System.Drawing.Point(15, 75)
+$lblPass2.Size = New-Object System.Drawing.Size(110, 20)
+$grpEnc.Controls.Add($lblPass2)
+
+$txtPass2 = New-Object System.Windows.Forms.TextBox
+$txtPass2.Location = New-Object System.Drawing.Point(15, 95)
+$txtPass2.Size = New-Object System.Drawing.Size(290, 23)
+$txtPass2.UseSystemPasswordChar = $true
+$grpEnc.Controls.Add($txtPass2)
+
+$chkShowPass = New-Object System.Windows.Forms.CheckBox
+$chkShowPass.Text = "Mostrar password"
+$chkShowPass.Location = New-Object System.Drawing.Point(15, 125)
+$chkShowPass.Size = New-Object System.Drawing.Size(130, 20)
+$grpEnc.Controls.Add($chkShowPass)
+
+$lblEncMethod = New-Object System.Windows.Forms.Label
+$lblEncMethod.Text = "Método encriptação:"
+$lblEncMethod.Location = New-Object System.Drawing.Point(15, 155)
+$lblEncMethod.Size = New-Object System.Drawing.Size(120, 20)
+$grpEnc.Controls.Add($lblEncMethod)
+
+$cmbEncMethod = New-Object System.Windows.Forms.ComboBox
+$cmbEncMethod.Location = New-Object System.Drawing.Point(15, 175)
+$cmbEncMethod.Size = New-Object System.Drawing.Size(120, 23)
+$cmbEncMethod.DropDownStyle = "DropDownList"
+$grpEnc.Controls.Add($cmbEncMethod)
+
+$chkEncryptHeaders = New-Object System.Windows.Forms.CheckBox
+$chkEncryptHeaders.Text = "Encriptar nomes ficheiros"
+$chkEncryptHeaders.Location = New-Object System.Drawing.Point(15, 205)
+$chkEncryptHeaders.Size = New-Object System.Drawing.Size(190, 20)
+$grpEnc.Controls.Add($chkEncryptHeaders)
 
 # --- GroupBox para Opções ---
 $grpOptions = New-Object System.Windows.Forms.GroupBox
 $grpOptions.Text = "Opções"
-$grpOptions.Location = New-Object System.Drawing.Point(460, 20)
-$grpOptions.Size = New-Object System.Drawing.Size(300, 140)
+$grpOptions.Location = New-Object System.Drawing.Point(740, 270)
+$grpOptions.Size = New-Object System.Drawing.Size(320, 110)
 $form.Controls.Add($grpOptions)
 
-# --- CheckBoxes dentro do grpOptions ---
-$chkEncryptHeaders = New-Object System.Windows.Forms.CheckBox
-$chkEncryptHeaders.Text = "Encriptar nomes ficheiros (7z)"
-$chkEncryptHeaders.Location = New-Object System.Drawing.Point(15, 25)
-$chkEncryptHeaders.Size = New-Object System.Drawing.Size(180, 20)
-$grpOptions.Controls.Add($chkEncryptHeaders)
+$chkSFX = New-Object System.Windows.Forms.CheckBox
+$chkSFX.Text = "SFX (7z)"
+$chkSFX.Location = New-Object System.Drawing.Point(15, 25)
+$chkSFX.Size = New-Object System.Drawing.Size(90, 20)
+$grpOptions.Controls.Add($chkSFX)
 
 $chkDeleteFiles = New-Object System.Windows.Forms.CheckBox
 $chkDeleteFiles.Text = "Eliminar ficheiros após compressão"
-$chkDeleteFiles.Location = New-Object System.Drawing.Point(15, 45)
-$chkDeleteFiles.Size = New-Object System.Drawing.Size(200, 20)
+$chkDeleteFiles.Location = New-Object System.Drawing.Point(15, 50)
+$chkDeleteFiles.Size = New-Object System.Drawing.Size(220, 20)
 $grpOptions.Controls.Add($chkDeleteFiles)
 
 $chkShared = New-Object System.Windows.Forms.CheckBox
 $chkShared.Text = "Comprimir ficheiros partilhados"
-$chkShared.Location = New-Object System.Drawing.Point(15, 65)
-$chkShared.Size = New-Object System.Drawing.Size(180, 20)
+$chkShared.Location = New-Object System.Drawing.Point(15, 75)
+$chkShared.Size = New-Object System.Drawing.Size(220, 20)
 $chkShared.Add_CheckedChanged({ Refresh-UiState })
 $grpOptions.Controls.Add($chkShared)
 
-$chkSFX = New-Object System.Windows.Forms.CheckBox
-$chkSFX.Text = "SFX (7z)"
-$chkSFX.Location = New-Object System.Drawing.Point(15, 85)
-$chkSFX.Size = New-Object System.Drawing.Size(80, 20)
-$grpOptions.Controls.Add($chkSFX)
-
 $chkRelative = New-Object System.Windows.Forms.CheckBox
 $chkRelative.Text = "Caminho relativo"
-$chkRelative.Location = New-Object System.Drawing.Point(15, 105)
-$chkRelative.Size = New-Object System.Drawing.Size(120, 20)
+$chkRelative.Location = New-Object System.Drawing.Point(15, 95)
+$chkRelative.Size = New-Object System.Drawing.Size(220, 20)
 $grpOptions.Controls.Add($chkRelative)
+
+$cmbFormat.Add_SelectedIndexChanged({ Update-FormatOptions })
+$cmbMethod.Add_SelectedIndexChanged({ Update-DynamicOptions })
+$chkShowPass.Add_CheckedChanged({
+    $txtPass1.UseSystemPasswordChar = -not $chkShowPass.Checked
+    $txtPass2.UseSystemPasswordChar = -not $chkShowPass.Checked
+})
 
 # --- Painel para seleção ---
 $panelSelect = New-Object System.Windows.Forms.Panel
-$panelSelect.Location = New-Object System.Drawing.Point(20, 270)
-$panelSelect.Size = New-Object System.Drawing.Size(710, 240)
+$panelSelect.Location = New-Object System.Drawing.Point(20, 390)
+$panelSelect.Size = New-Object System.Drawing.Size(700, 240)
 $form.Controls.Add($panelSelect)
 
 # ListBox único para ficheiros e pastas
@@ -274,8 +581,8 @@ $panelSelect.Controls.Add($listBox)
 
 # --- Painel lateral para botões ---
 $panelBtns = New-Object System.Windows.Forms.Panel
-$panelBtns.Location = New-Object System.Drawing.Point(740, 270)
-$panelBtns.Size = New-Object System.Drawing.Size(180, 240)
+$panelBtns.Location = New-Object System.Drawing.Point(740, 390)
+$panelBtns.Size = New-Object System.Drawing.Size(320, 420)
 $panelBtns.Anchor = "Top, Right"
 $form.Controls.Add($panelBtns)
 
@@ -348,14 +655,14 @@ $panelBtns.Controls.AddRange(@($btnAdd, $btnAddFile, $btnRemove, $btnRemoveFile,
 
 # Posicionar botões verticalmente com espaçamento uniforme
 $btnAdd.Location = New-Object System.Drawing.Point(25, 10)
-$btnAddFile.Location = New-Object System.Drawing.Point(25, 50)
-$btnRemove.Location = New-Object System.Drawing.Point(25, 90)
-$btnRemoveFile.Location = New-Object System.Drawing.Point(25, 130)
-$btnClear.Location = New-Object System.Drawing.Point(25, 170)
-$btnClearLog.Location = New-Object System.Drawing.Point(25, 210)
-$btnOptions.Location = New-Object System.Drawing.Point(25, 250)
-$btnCancelMain.Location = New-Object System.Drawing.Point(25, 290)
-$btnRun.Location = New-Object System.Drawing.Point(25, 330)
+$btnAddFile.Location = New-Object System.Drawing.Point(25, 55)
+$btnRemove.Location = New-Object System.Drawing.Point(25, 100)
+$btnRemoveFile.Location = New-Object System.Drawing.Point(25, 145)
+$btnClear.Location = New-Object System.Drawing.Point(25, 190)
+$btnClearLog.Location = New-Object System.Drawing.Point(25, 235)
+$btnOptions.Location = New-Object System.Drawing.Point(25, 280)
+$btnCancelMain.Location = New-Object System.Drawing.Point(25, 325)
+$btnRun.Location = New-Object System.Drawing.Point(25, 370)
 
 # --- Progress bars ---
 $progressFolder = New-Object System.Windows.Forms.ProgressBar
@@ -539,9 +846,16 @@ $listBox.Add_DragEnter({
 
 # --- Processamento ---
 $btnRun.Add_Click({
-    if ($selectedFolders.Count -eq 0 -and $selectedFiles.Count -gt 0) {
+    if ($selectedFolders.Count -eq 0 -and $selectedFiles.Count -eq 0) {
         [System.Windows.Forms.MessageBox]::Show("Adiciona pelo menos uma pasta ou ficheiro.")
         return
+    }
+
+    if ($txtPass1.Text -or $txtPass2.Text) {
+        if ($txtPass1.Text -ne $txtPass2.Text) {
+            [System.Windows.Forms.MessageBox]::Show("As passwords não coincidem.")
+            return
+        }
     }
 
     $script:CancelRequested = $false
@@ -554,11 +868,17 @@ $btnRun.Add_Click({
     $script:CurrentLogFile = Join-Path -Path $logDir -ChildPath ("Log_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".txt")
 
     # Preparar argumentos base
-    $format = $cmbFormat.SelectedItem
-    $compression = $cmbCompression.SelectedItem
-    $method = $cmbMethod.SelectedItem
-    $threads = [int]$txtThreads.Text
-    $password = $txtPassword.Text
+    $format = [string]$cmbFormat.SelectedItem
+    $compression = [string]$cmbCompression.SelectedItem
+    $method = [string]$cmbMethod.SelectedItem
+    $dictSize = [string]$cmbDict.SelectedItem
+    $wordSize = [string]$cmbWord.SelectedItem
+    $solidBlocks = [string]$cmbSolid.SelectedItem
+    $threads = [int]$numThreads.Value
+    $updateMode = [string]$cmbUpdateMode.SelectedItem
+    $pathMode = [string]$cmbPathMode.SelectedItem
+    $password = $txtPass1.Text
+    $encMethod = [string]$cmbEncMethod.SelectedItem
     $encryptHeaders = $chkEncryptHeaders.Checked
     $sfx = $chkSFX.Checked
     $relative = $chkRelative.Checked
@@ -566,18 +886,13 @@ $btnRun.Add_Click({
     $extra = $txtExtra.Text.Trim()
     $outputFolder = $txtOutput.Text.Trim()
 
-    if (-not $outputFolder) { $outputFolder = Split-Path -Parent $selectedFolders[0] }
-
-    $argBase = "a -t$format -$compression -$method"
-    if ($threads -gt 0) { $argBase += " -mmt$threads" }
-    if ($password) {
-        $argBase += " -p$password"
-        if ($format -eq "7z" -and $encryptHeaders) { $argBase += " -mhe=on" }
+    if (-not $outputFolder) {
+        if ($selectedFolders.Count -gt 0) {
+            $outputFolder = Split-Path -Parent $selectedFolders[0]
+        } elseif ($selectedFiles.Count -gt 0) {
+            $outputFolder = Split-Path -Parent $selectedFiles[0]
+        }
     }
-    if ($sfx -and $format -eq "7z") { $argBase += " -sfx" }
-    if ($relative) { $argBase += " -spf" }
-    if ($volume) { $argBase += " -v$volume" }
-    if ($extra) { $argBase += " $extra" }
 
     # Processamento de pastas
     if ($selectedFolders.Count -gt 0) {
@@ -599,7 +914,26 @@ $btnRun.Add_Click({
                 }
             }
 
-            $argString = "$argBase ""$archivePath"" ""$folder"""
+            $folderArg = if ($pathMode -eq "Mantém caminho") { $folder } else { $folderName }
+            $argList = Build-SevenZipArguments `
+                -ArchivePath $archivePath `
+                -FolderName $folderArg `
+                -Format $format `
+                -Level $compression `
+                -Threads $threads `
+                -DeleteAfter $chkDeleteFiles.Checked `
+                -CompressShared $chkShared.Checked `
+                -CreateSfx $sfx `
+                -VolumeSize $volume `
+                -Password $password `
+                -EncryptionMethod $encMethod `
+                -EncryptHeaders $encryptHeaders `
+                -Method $method `
+                -DictionarySize $dictSize `
+                -WordSize $wordSize `
+                -SolidBlock $solidBlocks `
+                -ExtraParams $extra
+            $argString = ($argList -join " ")
             Add-LogLine -TextBox $txtLog -Text "Comprimindo pasta: $folderName"
             Add-LogLine -TextBox $txtLog -Text "Comando: $SevenZip $argString"
 
@@ -687,8 +1021,32 @@ $btnRun.Add_Click({
                 }
             }
 
-            $fileList = $files -join '" "'
-            $argString = "$argBase ""$archivePath"" ""$fileList"""
+            $fileArgs = @()
+            foreach ($file in $files) {
+                $fileArg = if ($pathMode -eq "Mantém caminho") { $file } else { [System.IO.Path]::GetFileName($file) }
+                $fileArgs += "`"$fileArg`""
+            }
+
+            $argList = Build-SevenZipArguments `
+                -ArchivePath $archivePath `
+                -FolderName $fileArgs[0] `
+                -Format $format `
+                -Level $compression `
+                -Threads $threads `
+                -DeleteAfter $chkDeleteFiles.Checked `
+                -CompressShared $chkShared.Checked `
+                -CreateSfx $sfx `
+                -VolumeSize $volume `
+                -Password $password `
+                -EncryptionMethod $encMethod `
+                -EncryptHeaders $encryptHeaders `
+                -Method $method `
+                -DictionarySize $dictSize `
+                -WordSize $wordSize `
+                -SolidBlock $solidBlocks `
+                -ExtraParams $extra
+            if ($fileArgs.Count -gt 1) { $argList.AddRange($fileArgs[1..($fileArgs.Count - 1)]) }
+            $argString = ($argList -join " ")
             Add-LogLine -TextBox $txtLog -Text "Comprimindo ficheiros da pasta: $folderName"
             Add-LogLine -TextBox $txtLog -Text "Comando: $SevenZip $argString"
 
@@ -764,7 +1122,9 @@ $btnRun.Add_Click({
 })
 
 # --- Inicialização ---
+Update-FormatOptions
 Load-State
+Update-DynamicOptions
 Refresh-UiState
 
 # --- Mostrar form ---
