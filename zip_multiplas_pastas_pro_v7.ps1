@@ -292,8 +292,8 @@ function Load-State {
 # --- Criar form e controles ---
 $form = New-Object System.Windows.Forms.Form
 $form.Text = $AppTitle
-$form.Size = New-Object System.Drawing.Size(1080, 950)
-$form.MinimumSize = New-Object System.Drawing.Size(800, 600)
+$form.Size = New-Object System.Drawing.Size(1400, 1000)
+$form.MinimumSize = New-Object System.Drawing.Size(1200, 700)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "Sizable"
 $form.MaximizeBox = $true
@@ -302,37 +302,42 @@ $form.BackColor = [System.Drawing.Color]::FromArgb(245, 245, 245)
 $form.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
 $form.Add_FormClosing({ Save-State })
 
-# --- GroupBox para Configuração de compressão ---
-$grpCompression = New-Object System.Windows.Forms.GroupBox
-$grpCompression.Text = "Configuração de compressão"
-$grpCompression.Location = New-Object System.Drawing.Point(20, 20)
-$grpCompression.Size = New-Object System.Drawing.Size(700, 230)
-$form.Controls.Add($grpCompression)
+# --- Painel superior com 4 colunas de opções ---
+$panelOptions = New-Object System.Windows.Forms.Panel
+$panelOptions.Location = New-Object System.Drawing.Point(20, 20)
+$panelOptions.Size = New-Object System.Drawing.Size(1050, 280)
+$form.Controls.Add($panelOptions)
 
-# --- Labels e ComboBoxes dentro do grpCompression ---
+# --- Coluna 1: Compressão ---
+$grpCompression = New-Object System.Windows.Forms.GroupBox
+$grpCompression.Text = "Compressão"
+$grpCompression.Location = New-Object System.Drawing.Point(0, 0)
+$grpCompression.Size = New-Object System.Drawing.Size(250, 280)
+$panelOptions.Controls.Add($grpCompression)
+
 $lblFormat = New-Object System.Windows.Forms.Label
 $lblFormat.Text = "Formato:"
-$lblFormat.Location = New-Object System.Drawing.Point(15, 25)
+$lblFormat.Location = New-Object System.Drawing.Point(10, 25)
 $lblFormat.Size = New-Object System.Drawing.Size(60, 20)
 $grpCompression.Controls.Add($lblFormat)
 
 $cmbFormat = New-Object System.Windows.Forms.ComboBox
-$cmbFormat.Location = New-Object System.Drawing.Point(15, 45)
-$cmbFormat.Size = New-Object System.Drawing.Size(120, 23)
+$cmbFormat.Location = New-Object System.Drawing.Point(10, 45)
+$cmbFormat.Size = New-Object System.Drawing.Size(230, 23)
 $cmbFormat.DropDownStyle = "DropDownList"
 $cmbFormat.Items.AddRange(@("zip", "7z"))
 $cmbFormat.SelectedIndex = 0
 $grpCompression.Controls.Add($cmbFormat)
 
 $lblCompression = New-Object System.Windows.Forms.Label
-$lblCompression.Text = "Compressão:"
-$lblCompression.Location = New-Object System.Drawing.Point(160, 25)
-$lblCompression.Size = New-Object System.Drawing.Size(80, 20)
+$lblCompression.Text = "Nível:"
+$lblCompression.Location = New-Object System.Drawing.Point(10, 75)
+$lblCompression.Size = New-Object System.Drawing.Size(60, 20)
 $grpCompression.Controls.Add($lblCompression)
 
 $cmbCompression = New-Object System.Windows.Forms.ComboBox
-$cmbCompression.Location = New-Object System.Drawing.Point(160, 45)
-$cmbCompression.Size = New-Object System.Drawing.Size(120, 23)
+$cmbCompression.Location = New-Object System.Drawing.Point(10, 95)
+$cmbCompression.Size = New-Object System.Drawing.Size(230, 23)
 $cmbCompression.DropDownStyle = "DropDownList"
 $cmbCompression.Items.AddRange(@("0", "1", "3", "5", "7", "9"))
 $cmbCompression.SelectedIndex = 3
@@ -340,351 +345,365 @@ $grpCompression.Controls.Add($cmbCompression)
 
 $lblMethod = New-Object System.Windows.Forms.Label
 $lblMethod.Text = "Método:"
-$lblMethod.Location = New-Object System.Drawing.Point(310, 25)
+$lblMethod.Location = New-Object System.Drawing.Point(10, 125)
 $lblMethod.Size = New-Object System.Drawing.Size(60, 20)
 $grpCompression.Controls.Add($lblMethod)
 
 $cmbMethod = New-Object System.Windows.Forms.ComboBox
-$cmbMethod.Location = New-Object System.Drawing.Point(310, 45)
-$cmbMethod.Size = New-Object System.Drawing.Size(120, 23)
+$cmbMethod.Location = New-Object System.Drawing.Point(10, 145)
+$cmbMethod.Size = New-Object System.Drawing.Size(230, 23)
 $cmbMethod.DropDownStyle = "DropDownList"
 $grpCompression.Controls.Add($cmbMethod)
 
-$lblDict = New-Object System.Windows.Forms.Label
-$lblDict.Text = "Dicionário:"
-$lblDict.Location = New-Object System.Drawing.Point(15, 78)
-$lblDict.Size = New-Object System.Drawing.Size(70, 20)
-$grpCompression.Controls.Add($lblDict)
-
-$cmbDict = New-Object System.Windows.Forms.ComboBox
-$cmbDict.Location = New-Object System.Drawing.Point(15, 98)
-$cmbDict.Size = New-Object System.Drawing.Size(120, 23)
-$cmbDict.DropDownStyle = "DropDownList"
-$grpCompression.Controls.Add($cmbDict)
-
-$lblWord = New-Object System.Windows.Forms.Label
-$lblWord.Text = "Tamanho palavra:"
-$lblWord.Location = New-Object System.Drawing.Point(160, 78)
-$lblWord.Size = New-Object System.Drawing.Size(100, 20)
-$grpCompression.Controls.Add($lblWord)
-
-$cmbWord = New-Object System.Windows.Forms.ComboBox
-$cmbWord.Location = New-Object System.Drawing.Point(160, 98)
-$cmbWord.Size = New-Object System.Drawing.Size(120, 23)
-$cmbWord.DropDownStyle = "DropDownList"
-$grpCompression.Controls.Add($cmbWord)
-
-$lblSolid = New-Object System.Windows.Forms.Label
-$lblSolid.Text = "Blocos sólidos:"
-$lblSolid.Location = New-Object System.Drawing.Point(310, 78)
-$lblSolid.Size = New-Object System.Drawing.Size(90, 20)
-$grpCompression.Controls.Add($lblSolid)
-
-$cmbSolid = New-Object System.Windows.Forms.ComboBox
-$cmbSolid.Location = New-Object System.Drawing.Point(310, 98)
-$cmbSolid.Size = New-Object System.Drawing.Size(120, 23)
-$cmbSolid.DropDownStyle = "DropDownList"
-$grpCompression.Controls.Add($cmbSolid)
-
-$lblUpdateMode = New-Object System.Windows.Forms.Label
-$lblUpdateMode.Text = "Se o ZIP já existir:"
-$lblUpdateMode.Location = New-Object System.Drawing.Point(15, 128)
-$lblUpdateMode.Size = New-Object System.Drawing.Size(120, 20)
-$grpCompression.Controls.Add($lblUpdateMode)
-
-$cmbUpdateMode = New-Object System.Windows.Forms.ComboBox
-$cmbUpdateMode.Location = New-Object System.Drawing.Point(15, 148)
-$cmbUpdateMode.Size = New-Object System.Drawing.Size(120, 23)
-$cmbUpdateMode.DropDownStyle = "DropDownList"
-$cmbUpdateMode.Items.AddRange(@("Adicionar", "Atualizar", "Sincronizar", "Substituir"))
-$cmbUpdateMode.SelectedIndex = 0
-$grpCompression.Controls.Add($cmbUpdateMode)
-
-$lblPathMode = New-Object System.Windows.Forms.Label
-$lblPathMode.Text = "Passar pasta ao 7-Zip:"
-$lblPathMode.Location = New-Object System.Drawing.Point(160, 128)
-$lblPathMode.Size = New-Object System.Drawing.Size(135, 20)
-$grpCompression.Controls.Add($lblPathMode)
-
-$cmbPathMode = New-Object System.Windows.Forms.ComboBox
-$cmbPathMode.Location = New-Object System.Drawing.Point(160, 148)
-$cmbPathMode.Size = New-Object System.Drawing.Size(120, 23)
-$cmbPathMode.DropDownStyle = "DropDownList"
-$cmbPathMode.Items.AddRange(@("Mantém caminho", "Relativo", "Sem caminho"))
-$cmbPathMode.SelectedIndex = 0
-$grpCompression.Controls.Add($cmbPathMode)
-
 $lblThreads = New-Object System.Windows.Forms.Label
 $lblThreads.Text = "Threads:"
-$lblThreads.Location = New-Object System.Drawing.Point(310, 128)
+$lblThreads.Location = New-Object System.Drawing.Point(10, 175)
 $lblThreads.Size = New-Object System.Drawing.Size(60, 20)
 $grpCompression.Controls.Add($lblThreads)
 
 $numThreads = New-Object System.Windows.Forms.NumericUpDown
-$numThreads.Location = New-Object System.Drawing.Point(310, 148)
-$numThreads.Size = New-Object System.Drawing.Size(120, 23)
+$numThreads.Location = New-Object System.Drawing.Point(10, 195)
+$numThreads.Size = New-Object System.Drawing.Size(230, 23)
 $numThreads.Minimum = 0
 $numThreads.Maximum = 32
 $numThreads.Value = 0
 $grpCompression.Controls.Add($numThreads)
 
-# --- GroupBox para Destino / extras ---
-$grpOutput = New-Object System.Windows.Forms.GroupBox
-$grpOutput.Text = "Destino / extras"
-$grpOutput.Location = New-Object System.Drawing.Point(20, 260)
-$grpOutput.Size = New-Object System.Drawing.Size(700, 110)
-$form.Controls.Add($grpOutput)
+# --- Coluna 2: Opções Avançadas ---
+$grpAdvanced = New-Object System.Windows.Forms.GroupBox
+$grpAdvanced.Text = "Opções Avançadas"
+$grpAdvanced.Location = New-Object System.Drawing.Point(260, 0)
+$grpAdvanced.Size = New-Object System.Drawing.Size(250, 280)
+$panelOptions.Controls.Add($grpAdvanced)
 
-# --- Labels e TextBoxes dentro do grpOutput ---
-$lblOutput = New-Object System.Windows.Forms.Label
-$lblOutput.Text = "Pasta de saída:"
-$lblOutput.Location = New-Object System.Drawing.Point(15, 25)
-$lblOutput.Size = New-Object System.Drawing.Size(90, 20)
-$grpOutput.Controls.Add($lblOutput)
+$lblDict = New-Object System.Windows.Forms.Label
+$lblDict.Text = "Dicionário:"
+$lblDict.Location = New-Object System.Drawing.Point(10, 25)
+$lblDict.Size = New-Object System.Drawing.Size(70, 20)
+$grpAdvanced.Controls.Add($lblDict)
 
-$txtOutput = New-Object System.Windows.Forms.TextBox
-$txtOutput.Location = New-Object System.Drawing.Point(15, 45)
-$txtOutput.Size = New-Object System.Drawing.Size(470, 23)
-$grpOutput.Controls.Add($txtOutput)
+$cmbDict = New-Object System.Windows.Forms.ComboBox
+$cmbDict.Location = New-Object System.Drawing.Point(10, 45)
+$cmbDict.Size = New-Object System.Drawing.Size(230, 23)
+$cmbDict.DropDownStyle = "DropDownList"
+$grpAdvanced.Controls.Add($cmbDict)
 
-$lblVolume = New-Object System.Windows.Forms.Label
-$lblVolume.Text = "Volume (ex: 100m):"
-$lblVolume.Location = New-Object System.Drawing.Point(500, 25)
-$lblVolume.Size = New-Object System.Drawing.Size(110, 20)
-$grpOutput.Controls.Add($lblVolume)
+$lblWord = New-Object System.Windows.Forms.Label
+$lblWord.Text = "Tamanho palavra:"
+$lblWord.Location = New-Object System.Drawing.Point(10, 75)
+$lblWord.Size = New-Object System.Drawing.Size(100, 20)
+$grpAdvanced.Controls.Add($lblWord)
 
-$txtVolume = New-Object System.Windows.Forms.TextBox
-$txtVolume.Location = New-Object System.Drawing.Point(500, 45)
-$txtVolume.Size = New-Object System.Drawing.Size(170, 23)
-$grpOutput.Controls.Add($txtVolume)
+$cmbWord = New-Object System.Windows.Forms.ComboBox
+$cmbWord.Location = New-Object System.Drawing.Point(10, 95)
+$cmbWord.Size = New-Object System.Drawing.Size(230, 23)
+$cmbWord.DropDownStyle = "DropDownList"
+$grpAdvanced.Controls.Add($cmbWord)
 
-$lblExtra = New-Object System.Windows.Forms.Label
-$lblExtra.Text = "Parâmetros extra:"
-$lblExtra.Location = New-Object System.Drawing.Point(15, 75)
-$lblExtra.Size = New-Object System.Drawing.Size(100, 20)
-$grpOutput.Controls.Add($lblExtra)
+$lblSolid = New-Object System.Windows.Forms.Label
+$lblSolid.Text = "Blocos sólidos:"
+$lblSolid.Location = New-Object System.Drawing.Point(10, 125)
+$lblSolid.Size = New-Object System.Drawing.Size(90, 20)
+$grpAdvanced.Controls.Add($lblSolid)
 
-$txtExtra = New-Object System.Windows.Forms.TextBox
-$txtExtra.Location = New-Object System.Drawing.Point(15, 95)
-$txtExtra.Size = New-Object System.Drawing.Size(655, 23)
-$grpOutput.Controls.Add($txtExtra)
+$cmbSolid = New-Object System.Windows.Forms.ComboBox
+$cmbSolid.Location = New-Object System.Drawing.Point(10, 145)
+$cmbSolid.Size = New-Object System.Drawing.Size(230, 23)
+$cmbSolid.DropDownStyle = "DropDownList"
+$grpAdvanced.Controls.Add($cmbSolid)
 
-# --- GroupBox de Encriptação ---
+$chkSFX = New-Object System.Windows.Forms.CheckBox
+$chkSFX.Text = "SFX (7z)"
+$chkSFX.Location = New-Object System.Drawing.Point(10, 175)
+$chkSFX.Size = New-Object System.Drawing.Size(90, 20)
+$grpAdvanced.Controls.Add($chkSFX)
+
+$chkRelative = New-Object System.Windows.Forms.CheckBox
+$chkRelative.Text = "Caminho relativo"
+$chkRelative.Location = New-Object System.Drawing.Point(120, 175)
+$chkRelative.Size = New-Object System.Drawing.Size(120, 20)
+$grpAdvanced.Controls.Add($chkRelative)
+
+# --- Coluna 3: Encriptação ---
 $grpEnc = New-Object System.Windows.Forms.GroupBox
 $grpEnc.Text = "Encriptação"
-$grpEnc.Location = New-Object System.Drawing.Point(740, 20)
-$grpEnc.Size = New-Object System.Drawing.Size(320, 240)
-$form.Controls.Add($grpEnc)
+$grpEnc.Location = New-Object System.Drawing.Point(520, 0)
+$grpEnc.Size = New-Object System.Drawing.Size(250, 280)
+$panelOptions.Controls.Add($grpEnc)
 
 $lblPass1 = New-Object System.Windows.Forms.Label
 $lblPass1.Text = "Password:"
-$lblPass1.Location = New-Object System.Drawing.Point(15, 25)
+$lblPass1.Location = New-Object System.Drawing.Point(10, 25)
 $lblPass1.Size = New-Object System.Drawing.Size(70, 20)
 $grpEnc.Controls.Add($lblPass1)
 
 $txtPass1 = New-Object System.Windows.Forms.TextBox
-$txtPass1.Location = New-Object System.Drawing.Point(15, 45)
-$txtPass1.Size = New-Object System.Drawing.Size(290, 23)
+$txtPass1.Location = New-Object System.Drawing.Point(10, 45)
+$txtPass1.Size = New-Object System.Drawing.Size(230, 23)
 $txtPass1.UseSystemPasswordChar = $true
 $grpEnc.Controls.Add($txtPass1)
 
 $lblPass2 = New-Object System.Windows.Forms.Label
-$lblPass2.Text = "Repetir password:"
-$lblPass2.Location = New-Object System.Drawing.Point(15, 75)
-$lblPass2.Size = New-Object System.Drawing.Size(110, 20)
+$lblPass2.Text = "Repetir:"
+$lblPass2.Location = New-Object System.Drawing.Point(10, 75)
+$lblPass2.Size = New-Object System.Drawing.Size(70, 20)
 $grpEnc.Controls.Add($lblPass2)
 
 $txtPass2 = New-Object System.Windows.Forms.TextBox
-$txtPass2.Location = New-Object System.Drawing.Point(15, 95)
-$txtPass2.Size = New-Object System.Drawing.Size(290, 23)
+$txtPass2.Location = New-Object System.Drawing.Point(10, 95)
+$txtPass2.Size = New-Object System.Drawing.Size(230, 23)
 $txtPass2.UseSystemPasswordChar = $true
 $grpEnc.Controls.Add($txtPass2)
 
 $chkShowPass = New-Object System.Windows.Forms.CheckBox
-$chkShowPass.Text = "Mostrar password"
-$chkShowPass.Location = New-Object System.Drawing.Point(15, 125)
-$chkShowPass.Size = New-Object System.Drawing.Size(130, 20)
+$chkShowPass.Text = "Mostrar"
+$chkShowPass.Location = New-Object System.Drawing.Point(10, 125)
+$chkShowPass.Size = New-Object System.Drawing.Size(80, 20)
 $grpEnc.Controls.Add($chkShowPass)
 
 $lblEncMethod = New-Object System.Windows.Forms.Label
-$lblEncMethod.Text = "Método encriptação:"
-$lblEncMethod.Location = New-Object System.Drawing.Point(15, 155)
-$lblEncMethod.Size = New-Object System.Drawing.Size(120, 20)
+$lblEncMethod.Text = "Método:"
+$lblEncMethod.Location = New-Object System.Drawing.Point(10, 150)
+$lblEncMethod.Size = New-Object System.Drawing.Size(70, 20)
 $grpEnc.Controls.Add($lblEncMethod)
 
 $cmbEncMethod = New-Object System.Windows.Forms.ComboBox
-$cmbEncMethod.Location = New-Object System.Drawing.Point(15, 175)
-$cmbEncMethod.Size = New-Object System.Drawing.Size(120, 23)
+$cmbEncMethod.Location = New-Object System.Drawing.Point(10, 170)
+$cmbEncMethod.Size = New-Object System.Drawing.Size(230, 23)
 $cmbEncMethod.DropDownStyle = "DropDownList"
 $grpEnc.Controls.Add($cmbEncMethod)
 
 $chkEncryptHeaders = New-Object System.Windows.Forms.CheckBox
-$chkEncryptHeaders.Text = "Encriptar nomes ficheiros"
-$chkEncryptHeaders.Location = New-Object System.Drawing.Point(15, 205)
-$chkEncryptHeaders.Size = New-Object System.Drawing.Size(190, 20)
+$chkEncryptHeaders.Text = "Encriptar nomes"
+$chkEncryptHeaders.Location = New-Object System.Drawing.Point(10, 205)
+$chkEncryptHeaders.Size = New-Object System.Drawing.Size(130, 20)
 $grpEnc.Controls.Add($chkEncryptHeaders)
 
-# --- GroupBox para Opções ---
-$grpOptions = New-Object System.Windows.Forms.GroupBox
-$grpOptions.Text = "Opções"
-$grpOptions.Location = New-Object System.Drawing.Point(740, 270)
-$grpOptions.Size = New-Object System.Drawing.Size(320, 110)
-$form.Controls.Add($grpOptions)
+# --- Coluna 4: Destino e Atualização ---
+$grpDest = New-Object System.Windows.Forms.GroupBox
+$grpDest.Text = "Destino e Extras"
+$grpDest.Location = New-Object System.Drawing.Point(780, 0)
+$grpDest.Size = New-Object System.Drawing.Size(270, 280)
+$panelOptions.Controls.Add($grpDest)
 
-$chkSFX = New-Object System.Windows.Forms.CheckBox
-$chkSFX.Text = "SFX (7z)"
-$chkSFX.Location = New-Object System.Drawing.Point(15, 25)
-$chkSFX.Size = New-Object System.Drawing.Size(90, 20)
-$grpOptions.Controls.Add($chkSFX)
+$lblOutput = New-Object System.Windows.Forms.Label
+$lblOutput.Text = "Pasta saída:"
+$lblOutput.Location = New-Object System.Drawing.Point(10, 25)
+$lblOutput.Size = New-Object System.Drawing.Size(90, 20)
+$grpDest.Controls.Add($lblOutput)
+
+$txtOutput = New-Object System.Windows.Forms.TextBox
+$txtOutput.Location = New-Object System.Drawing.Point(10, 45)
+$txtOutput.Size = New-Object System.Drawing.Size(250, 23)
+$grpDest.Controls.Add($txtOutput)
+
+$lblUpdateMode = New-Object System.Windows.Forms.Label
+$lblUpdateMode.Text = "Se arquivo existe:"
+$lblUpdateMode.Location = New-Object System.Drawing.Point(10, 75)
+$lblUpdateMode.Size = New-Object System.Drawing.Size(100, 20)
+$grpDest.Controls.Add($lblUpdateMode)
+
+$cmbUpdateMode = New-Object System.Windows.Forms.ComboBox
+$cmbUpdateMode.Location = New-Object System.Drawing.Point(10, 95)
+$cmbUpdateMode.Size = New-Object System.Drawing.Size(250, 23)
+$cmbUpdateMode.DropDownStyle = "DropDownList"
+$cmbUpdateMode.Items.AddRange(@("Adicionar", "Atualizar", "Sincronizar", "Substituir"))
+$cmbUpdateMode.SelectedIndex = 0
+$grpDest.Controls.Add($cmbUpdateMode)
+
+$lblPathMode = New-Object System.Windows.Forms.Label
+$lblPathMode.Text = "Caminho:"
+$lblPathMode.Location = New-Object System.Drawing.Point(10, 125)
+$lblPathMode.Size = New-Object System.Drawing.Size(100, 20)
+$grpDest.Controls.Add($lblPathMode)
+
+$cmbPathMode = New-Object System.Windows.Forms.ComboBox
+$cmbPathMode.Location = New-Object System.Drawing.Point(10, 145)
+$cmbPathMode.Size = New-Object System.Drawing.Size(250, 23)
+$cmbPathMode.DropDownStyle = "DropDownList"
+$cmbPathMode.Items.AddRange(@("Mantém caminho", "Relativo", "Sem caminho"))
+$cmbPathMode.SelectedIndex = 0
+$grpDest.Controls.Add($cmbPathMode)
 
 $chkDeleteFiles = New-Object System.Windows.Forms.CheckBox
-$chkDeleteFiles.Text = "Eliminar ficheiros após compressão"
-$chkDeleteFiles.Location = New-Object System.Drawing.Point(15, 50)
-$chkDeleteFiles.Size = New-Object System.Drawing.Size(220, 20)
-$grpOptions.Controls.Add($chkDeleteFiles)
+$chkDeleteFiles.Text = "Eliminar após"
+$chkDeleteFiles.Location = New-Object System.Drawing.Point(10, 175)
+$chkDeleteFiles.Size = New-Object System.Drawing.Size(120, 20)
+$grpDest.Controls.Add($chkDeleteFiles)
 
 $chkShared = New-Object System.Windows.Forms.CheckBox
-$chkShared.Text = "Comprimir ficheiros partilhados"
-$chkShared.Location = New-Object System.Drawing.Point(15, 75)
-$chkShared.Size = New-Object System.Drawing.Size(220, 20)
+$chkShared.Text = "Ficheiros partilhados"
+$chkShared.Location = New-Object System.Drawing.Point(10, 205)
+$chkShared.Size = New-Object System.Drawing.Size(150, 20)
 $chkShared.Add_CheckedChanged({ Refresh-UiState })
-$grpOptions.Controls.Add($chkShared)
+$grpDest.Controls.Add($chkShared)
 
-$chkRelative = New-Object System.Windows.Forms.CheckBox
-$chkRelative.Text = "Caminho relativo"
-$chkRelative.Location = New-Object System.Drawing.Point(15, 95)
-$chkRelative.Size = New-Object System.Drawing.Size(220, 20)
-$grpOptions.Controls.Add($chkRelative)
+$lblVolume = New-Object System.Windows.Forms.Label
+$lblVolume.Text = "Volume (ex: 100m):"
+$lblVolume.Location = New-Object System.Drawing.Point(10, 235)
+$lblVolume.Size = New-Object System.Drawing.Size(120, 20)
+$grpDest.Controls.Add($lblVolume)
 
-$cmbFormat.Add_SelectedIndexChanged({ Update-FormatOptions })
-$cmbMethod.Add_SelectedIndexChanged({ Update-DynamicOptions })
-$chkShowPass.Add_CheckedChanged({
-    $txtPass1.UseSystemPasswordChar = -not $chkShowPass.Checked
-    $txtPass2.UseSystemPasswordChar = -not $chkShowPass.Checked
-})
+$txtVolume = New-Object System.Windows.Forms.TextBox
+$txtVolume.Location = New-Object System.Drawing.Point(10, 255)
+$txtVolume.Size = New-Object System.Drawing.Size(250, 23)
+$grpDest.Controls.Add($txtVolume)
 
-# --- Painel para seleção ---
+# --- Painel com lista de ficheiros/pastas ---
 $panelSelect = New-Object System.Windows.Forms.Panel
-$panelSelect.Location = New-Object System.Drawing.Point(20, 390)
-$panelSelect.Size = New-Object System.Drawing.Size(700, 240)
+$panelSelect.Location = New-Object System.Drawing.Point(20, 310)
+$panelSelect.Size = New-Object System.Drawing.Size(1050, 260)
 $form.Controls.Add($panelSelect)
 
-# ListBox único para ficheiros e pastas
+$lblList = New-Object System.Windows.Forms.Label
+$lblList.Text = "Ficheiros/Pastas para compressão:"
+$lblList.Location = New-Object System.Drawing.Point(0, 0)
+$lblList.Size = New-Object System.Drawing.Size(300, 20)
+$panelSelect.Controls.Add($lblList)
+
 $listBox = New-Object System.Windows.Forms.ListBox
-$listBox.Location = New-Object System.Drawing.Point(0, 0)
-$listBox.Size = New-Object System.Drawing.Size(700, 240)
+$listBox.Location = New-Object System.Drawing.Point(0, 25)
+$listBox.Size = New-Object System.Drawing.Size(1050, 235)
 $listBox.SelectionMode = "MultiExtended"
 $listBox.HorizontalScrollbar = $true
 $listBox.AllowDrop = $true
-$listBox.Anchor = "Top, Left, Right"
+$listBox.Anchor = "Top, Left, Right, Bottom"
 $panelSelect.Controls.Add($listBox)
 
-# --- Painel lateral para botões ---
+# --- Painel de botões à direita ---
 $panelBtns = New-Object System.Windows.Forms.Panel
-$panelBtns.Location = New-Object System.Drawing.Point(740, 390)
-$panelBtns.Size = New-Object System.Drawing.Size(320, 420)
+$panelBtns.Location = New-Object System.Drawing.Point(1080, 310)
+$panelBtns.Size = New-Object System.Drawing.Size(300, 490)
 $panelBtns.Anchor = "Top, Right"
 $form.Controls.Add($panelBtns)
 
-# --- Botões ---
 $btnAdd = New-Object System.Windows.Forms.Button
 $btnAdd.Text = "Adicionar pasta(s)"
-$btnAdd.Size = New-Object System.Drawing.Size(130, 32)
+$btnAdd.Size = New-Object System.Drawing.Size(280, 40)
 $btnAdd.FlatStyle = "Flat"
 $btnAdd.BackColor = [System.Drawing.Color]::FromArgb(186, 225, 255)
 $btnAdd.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
+$btnAdd.Location = New-Object System.Drawing.Point(10, 10)
+$panelBtns.Controls.Add($btnAdd)
 
 $btnAddFile = New-Object System.Windows.Forms.Button
 $btnAddFile.Text = "Adicionar ficheiro(s)"
-$btnAddFile.Size = New-Object System.Drawing.Size(130, 32)
+$btnAddFile.Size = New-Object System.Drawing.Size(280, 40)
 $btnAddFile.FlatStyle = "Flat"
 $btnAddFile.BackColor = [System.Drawing.Color]::FromArgb(186, 225, 255)
 $btnAddFile.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
+$btnAddFile.Location = New-Object System.Drawing.Point(10, 60)
+$panelBtns.Controls.Add($btnAddFile)
 
 $btnRemove = New-Object System.Windows.Forms.Button
 $btnRemove.Text = "Remover pasta"
-$btnRemove.Size = New-Object System.Drawing.Size(130, 32)
+$btnRemove.Size = New-Object System.Drawing.Size(280, 40)
 $btnRemove.FlatStyle = "Flat"
 $btnRemove.BackColor = [System.Drawing.Color]::FromArgb(255, 179, 186)
 $btnRemove.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
+$btnRemove.Location = New-Object System.Drawing.Point(10, 110)
+$panelBtns.Controls.Add($btnRemove)
 
 $btnRemoveFile = New-Object System.Windows.Forms.Button
 $btnRemoveFile.Text = "Remover ficheiro"
-$btnRemoveFile.Size = New-Object System.Drawing.Size(130, 32)
+$btnRemoveFile.Size = New-Object System.Drawing.Size(280, 40)
 $btnRemoveFile.FlatStyle = "Flat"
 $btnRemoveFile.BackColor = [System.Drawing.Color]::FromArgb(255, 179, 186)
 $btnRemoveFile.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
+$btnRemoveFile.Location = New-Object System.Drawing.Point(10, 160)
+$panelBtns.Controls.Add($btnRemoveFile)
 
 $btnClear = New-Object System.Windows.Forms.Button
 $btnClear.Text = "Limpar lista"
-$btnClear.Size = New-Object System.Drawing.Size(130, 32)
+$btnClear.Size = New-Object System.Drawing.Size(280, 40)
 $btnClear.FlatStyle = "Flat"
 $btnClear.BackColor = [System.Drawing.Color]::FromArgb(255, 235, 59)
 $btnClear.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
+$btnClear.Location = New-Object System.Drawing.Point(10, 210)
+$panelBtns.Controls.Add($btnClear)
 
 $btnClearLog = New-Object System.Windows.Forms.Button
 $btnClearLog.Text = "Limpar log"
-$btnClearLog.Size = New-Object System.Drawing.Size(130, 32)
+$btnClearLog.Size = New-Object System.Drawing.Size(280, 40)
 $btnClearLog.FlatStyle = "Flat"
 $btnClearLog.BackColor = [System.Drawing.Color]::FromArgb(255, 235, 59)
 $btnClearLog.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
+$btnClearLog.Location = New-Object System.Drawing.Point(10, 260)
+$panelBtns.Controls.Add($btnClearLog)
 
 $btnOptions = New-Object System.Windows.Forms.Button
 $btnOptions.Text = "Opções"
-$btnOptions.Size = New-Object System.Drawing.Size(130, 32)
+$btnOptions.Size = New-Object System.Drawing.Size(280, 40)
 $btnOptions.FlatStyle = "Flat"
 $btnOptions.BackColor = [System.Drawing.Color]::FromArgb(200, 200, 200)
 $btnOptions.ForeColor = [System.Drawing.Color]::FromArgb(33, 37, 41)
+$btnOptions.Location = New-Object System.Drawing.Point(10, 310)
+$panelBtns.Controls.Add($btnOptions)
 
 $btnCancelMain = New-Object System.Windows.Forms.Button
 $btnCancelMain.Text = "Cancelar"
-$btnCancelMain.Size = New-Object System.Drawing.Size(130, 32)
+$btnCancelMain.Size = New-Object System.Drawing.Size(280, 40)
 $btnCancelMain.FlatStyle = "Flat"
 $btnCancelMain.BackColor = [System.Drawing.Color]::FromArgb(255, 87, 87)
 $btnCancelMain.ForeColor = [System.Drawing.Color]::White
+$btnCancelMain.Location = New-Object System.Drawing.Point(10, 360)
+$panelBtns.Controls.Add($btnCancelMain)
 
 $btnRun = New-Object System.Windows.Forms.Button
 $btnRun.Text = "Iniciar"
-$btnRun.Size = New-Object System.Drawing.Size(130, 32)
+$btnRun.Size = New-Object System.Drawing.Size(280, 40)
 $btnRun.FlatStyle = "Flat"
 $btnRun.BackColor = [System.Drawing.Color]::FromArgb(76, 175, 80)
 $btnRun.ForeColor = [System.Drawing.Color]::White
+$btnRun.Location = New-Object System.Drawing.Point(10, 410)
+$panelBtns.Controls.Add($btnRun)
 
-# Adicionar botões ao painel
-$panelBtns.Controls.AddRange(@($btnAdd, $btnAddFile, $btnRemove, $btnRemoveFile, $btnClear, $btnClearLog, $btnOptions, $btnCancelMain, $btnRun))
+# --- Painel para Parâmetros Extra ---
+$panelExtra = New-Object System.Windows.Forms.Panel
+$panelExtra.Location = New-Object System.Drawing.Point(20, 580)
+$panelExtra.Size = New-Object System.Drawing.Size(1050, 50)
+$form.Controls.Add($panelExtra)
 
-# Posicionar botões verticalmente com espaçamento uniforme
-$btnAdd.Location = New-Object System.Drawing.Point(25, 10)
-$btnAddFile.Location = New-Object System.Drawing.Point(25, 55)
-$btnRemove.Location = New-Object System.Drawing.Point(25, 100)
-$btnRemoveFile.Location = New-Object System.Drawing.Point(25, 145)
-$btnClear.Location = New-Object System.Drawing.Point(25, 190)
-$btnClearLog.Location = New-Object System.Drawing.Point(25, 235)
-$btnOptions.Location = New-Object System.Drawing.Point(25, 280)
-$btnCancelMain.Location = New-Object System.Drawing.Point(25, 325)
-$btnRun.Location = New-Object System.Drawing.Point(25, 370)
+$lblExtra = New-Object System.Windows.Forms.Label
+$lblExtra.Text = "Parâmetros extra:"
+$lblExtra.Location = New-Object System.Drawing.Point(0, 0)
+$lblExtra.Size = New-Object System.Drawing.Size(100, 20)
+$panelExtra.Controls.Add($lblExtra)
+
+$txtExtra = New-Object System.Windows.Forms.TextBox
+$txtExtra.Location = New-Object System.Drawing.Point(0, 25)
+$txtExtra.Size = New-Object System.Drawing.Size(1050, 23)
+$panelExtra.Controls.Add($txtExtra)
 
 # --- Progress bars ---
 $progressFolder = New-Object System.Windows.Forms.ProgressBar
-$progressFolder.Location = New-Object System.Drawing.Point(20, 520)
-$progressFolder.Size = New-Object System.Drawing.Size(700, 20)
+$progressFolder.Location = New-Object System.Drawing.Point(20, 640)
+$progressFolder.Size = New-Object System.Drawing.Size(1050, 20)
 $form.Controls.Add($progressFolder)
 
 $progressTotal = New-Object System.Windows.Forms.ProgressBar
-$progressTotal.Location = New-Object System.Drawing.Point(20, 550)
-$progressTotal.Size = New-Object System.Drawing.Size(700, 20)
+$progressTotal.Location = New-Object System.Drawing.Point(20, 670)
+$progressTotal.Size = New-Object System.Drawing.Size(1050, 20)
 $form.Controls.Add($progressTotal)
 
 # --- TextBox para log ---
 $txtLog = New-Object System.Windows.Forms.TextBox
-$txtLog.Location = New-Object System.Drawing.Point(20, 580)
-$txtLog.Size = New-Object System.Drawing.Size(900, 320)
+$txtLog.Location = New-Object System.Drawing.Point(20, 700)
+$txtLog.Size = New-Object System.Drawing.Size(1360, 260)
 $txtLog.Multiline = $true
 $txtLog.ScrollBars = "Vertical"
 $txtLog.ReadOnly = $true
 $txtLog.BackColor = [System.Drawing.Color]::White
 $txtLog.Anchor = "Top, Bottom, Left, Right"
 $form.Controls.Add($txtLog)
+
+# --- Event handlers para os ComboBoxes e CheckBoxes ---
+$cmbFormat.Add_SelectedIndexChanged({ Update-FormatOptions })
+$cmbMethod.Add_SelectedIndexChanged({ Update-DynamicOptions })
+$chkShowPass.Add_CheckedChanged({
+    $txtPass1.UseSystemPasswordChar = -not $chkShowPass.Checked
+    $txtPass2.UseSystemPasswordChar = -not $chkShowPass.Checked
+})
 
 # --- Event handlers ---
 
