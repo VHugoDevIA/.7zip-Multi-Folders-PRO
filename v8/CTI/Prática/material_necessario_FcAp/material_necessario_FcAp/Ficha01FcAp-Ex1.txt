@@ -1,0 +1,40 @@
+Diapositivo nº 2:
+Sumário
+Tecnologias da Informação
+Software
+Hardware
+Bibliografia
+Contactos
+
+Diapositivo nº 3:
+TI
+Conjunto de recursos tecnológicos interligados entre si, que proporcionam, por meio das funções de hardware, software e telecomunicações, a automação e comunicação dos processos de negócio, da pesquisa científica, e de ensino e aprendizagem.
+
+Diapositivo nº 4:
+Hardware
+Parte física de um computador, é formado pelos componentes eletrónicos, como por exemplo, circuitos de fios e luz, placas, utensílios, correntes, e qualquer outro material em estado físico, que seja necessário para fazer com que o computador funcione.
+
+Diapositivo nº 5:
+Software
+Sequência de instruções escritas para serem interpretadas por um computador com o objetivo de executar tarefas especificas. Também pode ser definido como os programas que comandam o funcionamento de um computador.
+Podem ser classificados em tês tipos:
+-Software de Sistema
+-Software de Programação
+-Software de Aplicação
+
+Diapositivo nº 6:
+Bibliografia
+Apontamentos retirados da página da unidade curricular
+
+Diapositivo nº6
+Tipos de Software
+Software
+Software de Sistema
+Sistemas Operativos
+Controladores de Dispositivos
+Software de Programação
+Software de Aplicação
+Bases de Dados
+Processador de Texto
+Folha de Cálculo
+Jogos

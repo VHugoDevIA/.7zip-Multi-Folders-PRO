@@ -70,21 +70,6 @@ function Get-UniqueArchivePath {
     return $dest
 }
 
-function Remove-EmptyFolderIfPossible {
-    param([string]$FolderPath)
-
-    try {
-        if (Test-Path -LiteralPath $FolderPath -PathType Container) {
-            $items = Get-ChildItem -LiteralPath $FolderPath -Force -ErrorAction Stop
-            if ($items.Count -eq 0) {
-                Remove-Item -LiteralPath $FolderPath -Force -ErrorAction Stop
-            }
-        }
-    }
-    catch {
-    }
-}
-
 
 function Remove-OriginalFolderAfterSuccess {
     param([string]$FolderPath)
@@ -674,6 +659,74 @@ $form.Controls.Add($txtLog)
 
 $selectedFolders = New-Object 'System.Collections.Generic.List[string]'
 
+$sync = [hashtable]::Synchronized(@{
+    FolderProgress  = 0
+    TotalProgress   = 0
+    Status          = ""
+    LogQueue        = [System.Collections.Queue]::Synchronized([System.Collections.Queue]::new())
+    Done            = $false
+    WasCancelled    = $false
+    CancelRequested = $false
+    CurrentProcess  = $null
+})
+
+$timer = New-Object System.Windows.Forms.Timer
+$timer.Interval = 100
+
+$timer.Add_Tick({
+    while ($sync.LogQueue.Count -gt 0) {
+        try { Add-LogLine -TextBox $txtLog -Text ($sync.LogQueue.Dequeue()) } catch {}
+    }
+
+    $fp = [int]$sync.FolderProgress
+    if ($fp -ge 0 -and $fp -le 100) { $progressFolder.Value = $fp }
+
+    $tp = [int]$sync.TotalProgress
+    if ($tp -ge 0 -and $tp -le 100) {
+        $progressTotal.Value = $tp
+        $lblTotal.Text = "Progresso total: $tp%"
+    }
+
+    $st = $sync.Status
+    if ($st) { $lblStatus.Text = $st }
+
+    if ($sync.Done) {
+        $timer.Stop()
+
+        while ($sync.LogQueue.Count -gt 0) {
+            try { Add-LogLine -TextBox $txtLog -Text ($sync.LogQueue.Dequeue()) } catch {}
+        }
+
+        if ($script:CurrentLogFile) {
+            Add-LogLine -TextBox $txtLog -Text "Log gravado em: $script:CurrentLogFile"
+        }
+
+        $pf = if ($sync.WasCancelled) { 0 } else { 100 }
+        $pt = [int]$sync.TotalProgress
+        $progressFolder.Value = $pf
+        $progressTotal.Value  = $pt
+        $lblTotal.Text        = "Progresso total: $pt%"
+
+        Set-ButtonsRunning -Running $false
+
+        if ($sync.WasCancelled) {
+            [System.Windows.Forms.MessageBox]::Show("Processamento cancelado.", $AppTitle)
+        }
+        else {
+            [System.Windows.Forms.MessageBox]::Show("Concluído.", $AppTitle)
+        }
+
+        if ($script:CurrentLogFile -and $optionFlags.openLogFolderAfterFinish) {
+            try { Start-Process explorer.exe "/select,`"$script:CurrentLogFile`"" } catch {}
+        }
+
+        try { $script:BackgroundPS.EndInvoke($script:BackgroundJob) } catch {}
+        try { $script:BackgroundPS.Dispose() } catch {}
+        try { $script:BackgroundRS.Close() } catch {}
+        try { $script:BackgroundRS.Dispose() } catch {}
+    }
+})
+
 $optionFlags = @{
     openLogFolderAfterFinish = $true
     confirmBeforeClearList   = $false
@@ -681,6 +734,17 @@ $optionFlags = @{
 
 function Refresh-UiState {
     $btnRun.Enabled = ($selectedFolders.Count -gt 0)
+}
+
+function Set-ButtonsRunning {
+    param([bool]$Running)
+    $btnRun.Enabled        = (-not $Running -and $selectedFolders.Count -gt 0)
+    $btnAdd.Enabled        = -not $Running
+    $btnRemove.Enabled     = -not $Running
+    $btnClear.Enabled      = -not $Running
+    $btnClearLog.Enabled   = -not $Running
+    $btnOptions.Enabled    = -not $Running
+    $btnCancelMain.Enabled = $Running
 }
 
 function Update-DynamicOptions {
@@ -830,29 +894,24 @@ $btnOptions.Add_Click({
 })
 
 $btnCancelMain.Add_Click({
-    if (-not $script:CurrentProcess -and -not $btnCancelMain.Enabled) { return }
-
     $r = [System.Windows.Forms.MessageBox]::Show(
         "Queres cancelar a compactação em curso?",
         "Cancelar",
         [System.Windows.Forms.MessageBoxButtons]::YesNo,
         [System.Windows.Forms.MessageBoxIcon]::Question
     )
-
     if ($r -ne [System.Windows.Forms.DialogResult]::Yes) { return }
 
-    $script:CancelRequested = $true
-
+    $sync.CancelRequested = $true
     try {
-        if ($script:CurrentProcess -and -not $script:CurrentProcess.HasExited) {
-            $script:CurrentProcess.Kill()
-            $script:CurrentProcess.WaitForExit()
+        if ($sync.CurrentProcess -and -not $sync.CurrentProcess.HasExited) {
+            $sync.CurrentProcess.Kill()
+            $sync.CurrentProcess.WaitForExit(2000)
         }
     }
-    catch {
-    }
+    catch {}
 
-    Add-LogLine -TextBox $txtLog -Text "[CANCELADO] Pedido de cancelamento enviado pelo utilizador."
+    $sync.LogQueue.Enqueue("[CANCELADO] Pedido de cancelamento enviado pelo utilizador.")
     $lblStatus.Text = "Estado: a cancelar..."
 })
 
@@ -935,277 +994,333 @@ $listBox.Add_DragDrop({
     Refresh-UiState
 })
 
+$form.Add_DragEnter({
+    if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) {
+        $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy
+    }
+    else {
+        $_.Effect = [System.Windows.Forms.DragDropEffects]::None
+    }
+})
+
+$form.Add_DragDrop({
+    $items = $_.Data.GetData([System.Windows.Forms.DataFormats]::FileDrop)
+    foreach ($item in $items) {
+        if (Test-Path -LiteralPath $item -PathType Container) {
+            Add-FolderToList -Path $item -ListBox $listBox -Store $selectedFolders
+            Add-LogLine -TextBox $txtLog -Text "Pasta adicionada por arrastar: $item"
+        }
+    }
+    Refresh-UiState
+})
+
 $btnRun.Add_Click({
     if ($selectedFolders.Count -eq 0) {
         [System.Windows.Forms.MessageBox]::Show("Adiciona pelo menos uma pasta.")
         return
     }
 
-    $script:CancelRequested = $false
-    $script:CurrentProcess = $null
-    $createdArchivesThisRun = New-Object 'System.Collections.Generic.List[string]'
-    $foldersToDeleteAfterSuccess = New-Object 'System.Collections.Generic.List[string]'
-
-    Start-NewProcessingLog
-
-    if ($script:CurrentLogFile) {
-        Add-LogLine -TextBox $txtLog -Text "Log iniciado em: $script:CurrentLogFile"
-    }
-
     $pass1 = $txtPass1.Text
     $pass2 = $txtPass2.Text
-
     if (($pass1.Length -gt 0) -or ($pass2.Length -gt 0)) {
         if ($pass1 -ne $pass2) {
             [System.Windows.Forms.MessageBox]::Show("As palavras-passe não coincidem.", "Erro")
-            $btnRun.Enabled = $true
-            $btnAdd.Enabled = $true
-            $btnRemove.Enabled = $true
-            $btnClear.Enabled = $true
-            $btnClearLog.Enabled = $true
-            $btnOptions.Enabled = $true
-            $btnCancelMain.Enabled = $false
-            Refresh-UiState
             return
         }
     }
 
-    $btnRun.Enabled = $false
-    $btnAdd.Enabled = $false
-    $btnRemove.Enabled = $false
-    $btnClear.Enabled = $false
-    $btnClearLog.Enabled = $false
-    $btnOptions.Enabled = $false
-    $btnCancelMain.Enabled = $true
+    # Capturar todas as definições da UI antes de entrar no runspace
+    $settings = @{
+        Format         = [string]$cmbFormat.SelectedItem
+        Level          = [string]$cmbLevel.SelectedItem
+        Method         = [string]$cmbMethod.SelectedItem
+        DictSize       = [string]$cmbDict.SelectedItem
+        WordSize       = [string]$cmbWord.SelectedItem
+        SolidBlock     = [string]$cmbSolid.SelectedItem
+        Threads        = [int]$numThreads.Value
+        VolumeSize     = $txtVolume.Text
+        UpdateMode     = [string]$cmbUpdateMode.SelectedItem
+        PathMode       = [string]$cmbPathMode.SelectedItem
+        CreateSfx      = $chkSfx.Checked
+        CompressShared = $chkShared.Checked
+        DeleteAfter    = $chkDelete.Checked
+        Password       = $pass1
+        EncMethod      = [string]$cmbEncMethod.SelectedItem
+        EncHeaders     = $chkEncryptHeaders.Checked
+        ExtraParams    = $txtExtraParams.Text
+    }
 
-    $progressFolder.Value = 0
-    $progressTotal.Value = 0
-
+    # Pré-calcular jobs (caminhos e argumentos) na thread da UI
+    $jobs = [System.Collections.Generic.List[hashtable]]::new()
+    $jobIndex = 0
     $totalCount = $selectedFolders.Count
-    $currentIndex = 0
 
     foreach ($folder in @($selectedFolders)) {
-        if ($script:CancelRequested) { break }
-
-        $currentIndex++
-
+        $jobIndex++
         try {
-            $folderPath = [string]$folder
-            $folderObj = Get-Item -LiteralPath $folderPath -ErrorAction Stop
+            $folderObj  = Get-Item -LiteralPath $folder -ErrorAction Stop
             $folderName = $folderObj.Name
-            $parent = $folderObj.Parent.FullName
-            $format = [string]$cmbFormat.SelectedItem
-            $archiveBaseName = "{0}_{1}" -f $folderName, $script:ComputerSuffix
+            $parent     = $folderObj.Parent.FullName
+            $format     = $settings.Format
+            $baseName   = "{0}_{1}" -f $folderName, $script:ComputerSuffix
+            $defaultDest = Join-Path $parent ($baseName + "." + $format)
 
-            $existingDefault = Join-Path -Path $parent -ChildPath ($archiveBaseName + "." + $format)
-            $destExistedBefore = $false
-
-            switch ([string]$cmbUpdateMode.SelectedItem) {
+            $skip = $false
+            switch ($settings.UpdateMode) {
                 "Ignorar" {
-                    if (Test-Path -LiteralPath $existingDefault) {
-                        Add-LogLine -TextBox $txtLog -Text ""
-                        Add-LogLine -TextBox $txtLog -Text "[IGNORADO] Já existe: $existingDefault"
-                        $progressTotal.Value = [math]::Min([math]::Round(($currentIndex / $totalCount) * 100), 100)
-                        continue
-                    }
-                    $dest = $existingDefault
+                    if (Test-Path -LiteralPath $defaultDest) { $skip = $true; $dest = $defaultDest }
+                    else { $dest = $defaultDest }
                 }
-                "Novo" {
-                    $dest = $existingDefault
-                }
-                default {
-                    $dest = Get-UniqueArchivePath -Parent $parent -BaseName $archiveBaseName -Extension $format
-                }
+                "Novo"    { $dest = $defaultDest }
+                default   { $dest = Get-UniqueArchivePath -Parent $parent -BaseName $baseName -Extension $format }
             }
 
-            $destExistedBefore = Test-Path -LiteralPath $dest
-
-            $lblStatus.Text = "Estado: a comprimir $folderName ($currentIndex de $totalCount)"
-            $progressFolder.Value = 0
-            Add-LogLine -TextBox $txtLog -Text ""
-            Add-LogLine -TextBox $txtLog -Text "A processar: $folderPath"
-            Add-LogLine -TextBox $txtLog -Text "Destino: $dest"
-
-            if (-not $destExistedBefore -and -not $createdArchivesThisRun.Contains($dest)) {
-                $createdArchivesThisRun.Add($dest)
+            $argString = ""
+            if (-not $skip) {
+                $itemToArchive = if ($settings.PathMode -eq "Absoluto") { $folder } else { $folderName }
+                $argList = Build-SevenZipArguments `
+                    -ArchivePath      $dest `
+                    -FolderName       $itemToArchive `
+                    -Format           $format `
+                    -Level            $settings.Level `
+                    -Threads          $settings.Threads `
+                    -DeleteAfter      $settings.DeleteAfter `
+                    -CompressShared   $settings.CompressShared `
+                    -CreateSfx        $settings.CreateSfx `
+                    -VolumeSize       $settings.VolumeSize `
+                    -Password         $settings.Password `
+                    -EncryptionMethod $settings.EncMethod `
+                    -EncryptHeaders   $settings.EncHeaders `
+                    -Method           $settings.Method `
+                    -DictionarySize   $settings.DictSize `
+                    -WordSize         $settings.WordSize `
+                    -SolidBlock       $settings.SolidBlock `
+                    -ExtraParams      $settings.ExtraParams
+                $argString = $argList -join " "
             }
 
-            $itemToArchive = if ($cmbPathMode.SelectedItem -eq "Absoluto") { $folderPath } else { $folderName }
+            $jobs.Add(@{
+                FolderPath  = $folder
+                FolderName  = $folderName
+                Parent      = $parent
+                DestPath    = $dest
+                ArgString   = $argString
+                Skip        = $skip
+                DeleteAfter = $settings.DeleteAfter
+                IsNewDest   = (-not (Test-Path -LiteralPath $dest))
+                Index       = $jobIndex
+                Total       = $totalCount
+            })
+        }
+        catch {
+            $jobs.Add(@{
+                FolderPath  = $folder
+                FolderName  = [System.IO.Path]::GetFileName($folder)
+                Parent      = ""; DestPath = ""; ArgString = ""
+                Skip        = $false; DeleteAfter = $false; IsNewDest = $false
+                Index       = $jobIndex; Total = $totalCount
+                JobError    = $_.Exception.Message
+            })
+        }
+    }
 
-            $argList = Build-SevenZipArguments `
-                -ArchivePath $dest `
-                -FolderName $itemToArchive `
-                -Format ([string]$cmbFormat.SelectedItem) `
-                -Level ([string]$cmbLevel.SelectedItem) `
-                -Threads $numThreads.Value `
-                -DeleteAfter $chkDelete.Checked `
-                -CompressShared $chkShared.Checked `
-                -CreateSfx $chkSfx.Checked `
-                -VolumeSize $txtVolume.Text `
-                -Password $pass1 `
-                -EncryptionMethod ([string]$cmbEncMethod.SelectedItem) `
-                -EncryptHeaders $chkEncryptHeaders.Checked `
-                -Method ([string]$cmbMethod.SelectedItem) `
-                -DictionarySize ([string]$cmbDict.SelectedItem) `
-                -WordSize ([string]$cmbWord.SelectedItem) `
-                -SolidBlock ([string]$cmbSolid.SelectedItem) `
-                -ExtraParams $txtExtraParams.Text
+    # Aviso se modo "Novo" vai sobrescrever arquivos existentes
+    if ($settings.UpdateMode -eq "Novo") {
+        $willOverwrite = @($jobs | Where-Object { -not $_.ContainsKey('JobError') -and -not $_.Skip -and -not $_.IsNewDest })
+        if ($willOverwrite.Count -gt 0) {
+            $names = ($willOverwrite | ForEach-Object { "  • $($_.FolderName)" }) -join "`n"
+            $r = [System.Windows.Forms.MessageBox]::Show(
+                "Os seguintes arquivos já existem e vão ser sobrescritos:`n`n$names`n`nDeseja continuar?",
+                "Aviso — Sobrescrever arquivos",
+                [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                [System.Windows.Forms.MessageBoxIcon]::Warning
+            )
+            if ($r -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+        }
+    }
 
-            $argString = ($argList -join " ")
-            Add-LogLine -TextBox $txtLog -Text "Comando: $argString"
+    # Iniciar log e resetar sync
+    Start-NewProcessingLog
+    $sync.FolderProgress  = 0
+    $sync.TotalProgress   = 0
+    $sync.Status          = "Estado: a iniciar..."
+    $sync.Done            = $false
+    $sync.WasCancelled    = $false
+    $sync.CancelRequested = $false
+    $sync.CurrentProcess  = $null
+    $sync.LogQueue.Clear()
+
+    if ($script:CurrentLogFile) {
+        $sync.LogQueue.Enqueue("Log iniciado em: $script:CurrentLogFile")
+    }
+
+    Set-ButtonsRunning -Running $true
+    $progressFolder.Value = 0
+    $progressTotal.Value  = 0
+    $lblTotal.Text        = "Progresso total: 0%"
+
+    # Script de fundo: execução do 7-Zip sem bloquear a UI
+    $bgScript = {
+        param(
+            [hashtable]$Sync,
+            [System.Collections.Generic.List[hashtable]]$Jobs,
+            [string]$SevenZip
+        )
+
+        $createdArchives = [System.Collections.Generic.List[string]]::new()
+        $foldersToDelete = [System.Collections.Generic.List[string]]::new()
+
+        foreach ($job in $Jobs) {
+            if ($Sync.CancelRequested) { break }
+
+            if ($job.ContainsKey('JobError')) {
+                $Sync.LogQueue.Enqueue("")
+                $Sync.LogQueue.Enqueue("[ERRO] Não foi possível processar '$($job.FolderPath)': $($job.JobError)")
+                $Sync.TotalProgress = [math]::Min([math]::Round(($job.Index / $job.Total) * 100), 100)
+                continue
+            }
+
+            if ($job.Skip) {
+                $Sync.LogQueue.Enqueue("")
+                $Sync.LogQueue.Enqueue("[IGNORADO] Já existe: $($job.DestPath)")
+                $Sync.TotalProgress = [math]::Min([math]::Round(($job.Index / $job.Total) * 100), 100)
+                continue
+            }
+
+            $Sync.Status = "Estado: a comprimir $($job.FolderName) ($($job.Index) de $($job.Total))"
+            $Sync.FolderProgress = 0
+            $Sync.LogQueue.Enqueue("")
+            $Sync.LogQueue.Enqueue("A processar: $($job.FolderPath)")
+            $Sync.LogQueue.Enqueue("Destino: $($job.DestPath)")
+            $Sync.LogQueue.Enqueue("Comando: $($job.ArgString)")
+
+            if ($job.IsNewDest -and -not $createdArchives.Contains($job.DestPath)) {
+                $createdArchives.Add($job.DestPath)
+            }
 
             $psi = New-Object System.Diagnostics.ProcessStartInfo
-            $psi.FileName = $SevenZip
-            $psi.WorkingDirectory = $parent
-            $psi.Arguments = $argString
-            $psi.UseShellExecute = $false
+            $psi.FileName             = $SevenZip
+            $psi.WorkingDirectory     = $job.Parent
+            $psi.Arguments            = $job.ArgString
+            $psi.UseShellExecute      = $false
             $psi.RedirectStandardOutput = $true
-            $psi.RedirectStandardError = $true
-            $psi.CreateNoWindow = $true
+            $psi.RedirectStandardError  = $true
+            $psi.CreateNoWindow       = $true
 
             $p = New-Object System.Diagnostics.Process
             $p.StartInfo = $psi
             $null = $p.Start()
-            $script:CurrentProcess = $p
+            $Sync.CurrentProcess = $p
 
             while (-not $p.HasExited) {
                 while (($line = $p.StandardOutput.ReadLine()) -ne $null) {
                     if ($line -match '(\d+)%') {
-                        $pct = [int]$matches[1]
-                        if ($pct -ge 0 -and $pct -le 100) {
-                            $progressFolder.Value = $pct
-                        }
+                        $pct = [int]$Matches[1]
+                        if ($pct -ge 0 -and $pct -le 100) { $Sync.FolderProgress = $pct }
                     }
-
-                    if (-not [string]::IsNullOrWhiteSpace($line)) {
-                        Add-LogLine -TextBox $txtLog -Text $line
-                    }
-
-                    [System.Windows.Forms.Application]::DoEvents()
+                    if (-not [string]::IsNullOrWhiteSpace($line)) { $Sync.LogQueue.Enqueue($line) }
                 }
-
                 while (($errLine = $p.StandardError.ReadLine()) -ne $null) {
-                    if (-not [string]::IsNullOrWhiteSpace($errLine)) {
-                        Add-LogLine -TextBox $txtLog -Text "[ERRO] $errLine"
-                    }
-
-                    [System.Windows.Forms.Application]::DoEvents()
+                    if (-not [string]::IsNullOrWhiteSpace($errLine)) { $Sync.LogQueue.Enqueue("[ERRO] $errLine") }
                 }
-
+                if ($Sync.CancelRequested) { break }
                 Start-Sleep -Milliseconds 120
-                [System.Windows.Forms.Application]::DoEvents()
-
-                if ($script:CancelRequested) {
-                    break
-                }
             }
 
+            # Ler output restante após saída do processo
             while (($line = $p.StandardOutput.ReadLine()) -ne $null) {
                 if ($line -match '(\d+)%') {
-                    $pct = [int]$matches[1]
-                    if ($pct -ge 0 -and $pct -le 100) {
-                        $progressFolder.Value = $pct
-                    }
+                    $pct = [int]$Matches[1]
+                    if ($pct -ge 0 -and $pct -le 100) { $Sync.FolderProgress = $pct }
                 }
-
-                if (-not [string]::IsNullOrWhiteSpace($line)) {
-                    Add-LogLine -TextBox $txtLog -Text $line
-                }
+                if (-not [string]::IsNullOrWhiteSpace($line)) { $Sync.LogQueue.Enqueue($line) }
             }
-
             while (($errLine = $p.StandardError.ReadLine()) -ne $null) {
-                if (-not [string]::IsNullOrWhiteSpace($errLine)) {
-                    Add-LogLine -TextBox $txtLog -Text "[ERRO] $errLine"
-                }
+                if (-not [string]::IsNullOrWhiteSpace($errLine)) { $Sync.LogQueue.Enqueue("[ERRO] $errLine") }
             }
 
             $p.WaitForExit()
             $exitCode = $p.ExitCode
-            $script:CurrentProcess = $null
+            $Sync.CurrentProcess = $null
 
-            if ($script:CancelRequested) {
-                Add-LogLine -TextBox $txtLog -Text "[CANCELADO] Processo interrompido: $folderName"
+            if ($Sync.CancelRequested) {
+                $Sync.LogQueue.Enqueue("[CANCELADO] Processo interrompido: $($job.FolderName)")
                 break
             }
             elseif ($exitCode -eq 0) {
-                $progressFolder.Value = 100
-                Add-LogLine -TextBox $txtLog -Text "[OK] Concluído: $folderName"
-
-                if ($chkDelete.Checked -and -not $foldersToDeleteAfterSuccess.Contains($folderPath)) {
-                    $foldersToDeleteAfterSuccess.Add($folderPath)
-                    Add-LogLine -TextBox $txtLog -Text "[PENDENTE] Originais serão eliminados apenas no fim, se toda a operação terminar com sucesso: $folderName"
+                $Sync.FolderProgress = 100
+                $Sync.LogQueue.Enqueue("[OK] Concluído: $($job.FolderName)")
+                if ($job.DeleteAfter -and -not $foldersToDelete.Contains($job.FolderPath)) {
+                    $foldersToDelete.Add($job.FolderPath)
+                    $Sync.LogQueue.Enqueue("[PENDENTE] Originais serão eliminados no fim: $($job.FolderName)")
                 }
             }
             else {
-                Add-LogLine -TextBox $txtLog -Text "[ERRO] Falhou: $folderName (código $exitCode)"
+                $Sync.LogQueue.Enqueue("[ERRO] Falhou: $($job.FolderName) (código $exitCode)")
             }
-        }
-        catch {
-            $script:CurrentProcess = $null
-            Add-LogLine -TextBox $txtLog -Text "[ERRO] Exceção ao processar '$folder': $($_.Exception.Message)"
+
+            $Sync.TotalProgress = [math]::Min([math]::Round(($job.Index / $job.Total) * 100), 100)
         }
 
-        $progressTotal.Value = [math]::Min([math]::Round(($currentIndex / $totalCount) * 100), 100)
-        [System.Windows.Forms.Application]::DoEvents()
-    }
-
-    if ($script:CancelRequested) {
-        Remove-CreatedArchives -ArchivePaths $createdArchivesThisRun
-        $progressFolder.Value = 0
-        $lblStatus.Text = "Estado: cancelado"
-        Add-LogLine -TextBox $txtLog -Text ""
-        Add-LogLine -TextBox $txtLog -Text "Processamento cancelado pelo utilizador."
-        Add-LogLine -TextBox $txtLog -Text "Arquivos criados nesta operação foram removidos."
-    }
-    else {
-        if ($chkDelete.Checked) {
-            foreach ($folderToDelete in @($foldersToDeleteAfterSuccess)) {
-                $removedOk = Remove-OriginalFolderAfterSuccess -FolderPath $folderToDelete
-                if ($removedOk) {
-                    Add-LogLine -TextBox $txtLog -Text "[OK] Originais eliminados após sucesso global: $folderToDelete"
-                }
-                else {
-                    Add-LogLine -TextBox $txtLog -Text "[AVISO] Não foi possível eliminar a pasta original: $folderToDelete"
+        # Pós-processamento
+        if ($Sync.CancelRequested) {
+            foreach ($archive in $createdArchives) {
+                for ($i = 0; $i -lt 8; $i++) {
+                    try {
+                        if (Test-Path -LiteralPath $archive) { Remove-Item -LiteralPath $archive -Force -ErrorAction Stop }
+                        break
+                    }
+                    catch { Start-Sleep -Milliseconds 250 }
                 }
             }
+            $Sync.FolderProgress = 0
+            $Sync.Status = "Estado: cancelado"
+            $Sync.LogQueue.Enqueue("")
+            $Sync.LogQueue.Enqueue("Processamento cancelado pelo utilizador.")
+            $Sync.LogQueue.Enqueue("Arquivos criados nesta operação foram removidos.")
+            $Sync.WasCancelled = $true
+        }
+        else {
+            foreach ($folderToDelete in $foldersToDelete) {
+                $deleted = $false
+                for ($i = 0; $i -lt 8; $i++) {
+                    try {
+                        if (Test-Path -LiteralPath $folderToDelete) {
+                            Remove-Item -LiteralPath $folderToDelete -Recurse -Force -ErrorAction Stop
+                        }
+                        $deleted = $true; break
+                    }
+                    catch { Start-Sleep -Milliseconds 250 }
+                }
+                if ($deleted) { $Sync.LogQueue.Enqueue("[OK] Originais eliminados após sucesso global: $folderToDelete") }
+                else          { $Sync.LogQueue.Enqueue("[AVISO] Não foi possível eliminar a pasta original: $folderToDelete") }
+            }
+            $Sync.Status = "Estado: terminado"
+            $Sync.LogQueue.Enqueue("")
+            $Sync.LogQueue.Enqueue("Processamento concluído.")
         }
 
-        $lblStatus.Text = "Estado: terminado"
-        Add-LogLine -TextBox $txtLog -Text ""
-        Add-LogLine -TextBox $txtLog -Text "Processamento concluído."
+        $Sync.Done = $true
     }
 
-    if ($script:CurrentLogFile) {
-        Add-LogLine -TextBox $txtLog -Text "Log gravado em: $script:CurrentLogFile"
-    }
+    # Criar e iniciar runspace em background (não bloqueia thread UI)
+    $rs = [runspacefactory]::CreateRunspace()
+    $rs.ApartmentState = "STA"
+    $rs.ThreadOptions  = "ReuseThread"
+    $rs.Open()
 
-    $script:CurrentProcess = $null
-    $wasCancelled = $script:CancelRequested
-    $script:CancelRequested = $false
-    $btnRun.Enabled = $true
-    $btnAdd.Enabled = $true
-    $btnRemove.Enabled = $true
-    $btnClear.Enabled = $true
-    $btnClearLog.Enabled = $true
-    $btnOptions.Enabled = $true
-    $btnCancelMain.Enabled = $false
-    Refresh-UiState
+    $ps = [powershell]::Create()
+    $ps.Runspace = $rs
+    [void]$ps.AddScript($bgScript)
+    [void]$ps.AddArgument($sync)
+    [void]$ps.AddArgument($jobs)
+    [void]$ps.AddArgument($SevenZip)
 
-    if ($wasCancelled) {
-        [System.Windows.Forms.MessageBox]::Show("Processamento cancelado.", $AppTitle)
-    }
-    else {
-        [System.Windows.Forms.MessageBox]::Show("Concluído.", $AppTitle)
-    }
+    $script:BackgroundJob = $ps.BeginInvoke()
+    $script:BackgroundPS  = $ps
+    $script:BackgroundRS  = $rs
 
-    if ($script:CurrentLogFile -and $optionFlags.openLogFolderAfterFinish) {
-        try {
-            Start-Process explorer.exe "/select,`"$script:CurrentLogFile`""
-        }
-        catch {
-        }
-    }
-
+    $timer.Start()
 })
 
 $appState = Load-AppState
@@ -1250,6 +1365,15 @@ if ($appState) {
                 $optionFlags.confirmBeforeClearList = [bool]$appState.Options.confirmBeforeClearList
             }
         }
+
+        if ($appState.Folders) {
+            foreach ($f in $appState.Folders) {
+                $fp = [string]$f
+                if ($fp -and (Test-Path -LiteralPath $fp -PathType Container)) {
+                    Add-FolderToList -Path $fp -ListBox $listBox -Store $selectedFolders
+                }
+            }
+        }
     }
     catch {
     }
@@ -1282,6 +1406,7 @@ $form.Add_FormClosing({
         EncryptionMethod = [string]$cmbEncMethod.SelectedItem
         EncryptHeaders = $chkEncryptHeaders.Checked
         ExtraParams = $txtExtraParams.Text
+        Folders = @($selectedFolders)
         Options = @{
             openLogFolderAfterFinish = $optionFlags.openLogFolderAfterFinish
             confirmBeforeClearList   = $optionFlags.confirmBeforeClearList
